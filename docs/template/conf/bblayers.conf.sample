@@ -1,0 +1,20 @@
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+BBLAYERS ?= " \
+  ${TOPDIR}/../sources/meta-gplv2 \
+  ${TOPDIR}/../sources/poky/meta \
+  ${TOPDIR}/../sources/poky/meta-poky \
+  ${TOPDIR}/../sources/poky/meta-yocto-bsp \
+  ${TOPDIR}/../sources/meta-renesas/meta-rz-common \
+  ${TOPDIR}/../sources/meta-renesas/meta-rzg2l \
+  ${TOPDIR}/../sources/meta-renesas/meta-rzv2h \
+  ${TOPDIR}/../sources/meta-openembedded/meta-oe \
+  ${TOPDIR}/../sources/meta-openembedded/meta-python \
+  ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \
+  ${TOPDIR}/../sources/meta-imdt-renesas \
+  "
