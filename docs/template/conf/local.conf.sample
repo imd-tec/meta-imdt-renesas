@@ -25,7 +25,7 @@
 #MACHINE ?= "qemux86"
 #MACHINE ?= "qemux86-64"
 #
-# There are also the following hardware board target machines included for 
+# There are also the following hardware board target machines included for
 # demonstration purposes:
 #
 #MACHINE ?= "beaglebone-yocto"
@@ -80,12 +80,12 @@
 #
 # The distribution setting controls which policy settings are used as defaults.
 # The default value is fine for general Yocto project use, at least initially.
-# Ultimately when creating custom policy, people will likely end up subclassing 
+# Ultimately when creating custom policy, people will likely end up subclassing
 # these defaults.
 #
 DISTRO ?= "poky"
 # As an example of a subclass there is a "bleeding" edge policy configuration
-# where many versions are set to the absolute latest code from the upstream 
+# where many versions are set to the absolute latest code from the upstream
 # source control systems. This is just mentioned here as an example, its not
 # useful to most new users.
 # DISTRO ?= "poky-bleeding"
@@ -326,6 +326,7 @@ WKS_SUPPORT ?= "1"
 WKS_DEFAULT_FILE_rzv2h-dev = "rz-image-bootpart-mmc.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-alpha = "rz-image-bootpart-esd_rzv2h.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-ver1 = "rz-image-bootpart-esd_rzv2h.wks"
+WKS_DEFAULT_FILE_imdt-rzv2h-evk = "rz-image-bootpart-esd_rzv2h.wks"
 # Defines additional free disk space created in the image in Kbytes.
 IMAGE_ROOTFS_EXTRA_SPACE = "1048576"
 
