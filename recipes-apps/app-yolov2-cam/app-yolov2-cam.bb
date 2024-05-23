@@ -22,4 +22,5 @@ INSANE_SKIP_${PN}_append = "already-stripped"
 
 FILES_${PN} = "\
     /opt/imdt/pico-demos/app_yolov2_cam \
-    /opt/imdt/pico-demos/yolov2_cam/*"
+    /opt/imdt/pico-demos/yolov2_cam/* \
+"
