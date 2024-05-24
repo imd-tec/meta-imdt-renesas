@@ -11,7 +11,7 @@ PV = "1.0"
 S = "${WORKDIR}/rpm"
 
 DEPENDS = "libhttpserver"
-RDEPENDS_${PN} = "libhttpserver glog nlohmann-json" 
+RDEPENDS_${PN} = "libhttpserver glog" 
 
 # Copy the contents of the RPM to the root filesystem
 do_install_append() {

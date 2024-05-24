@@ -1,4 +1,4 @@
-# IMDT Renesas EVK Board Support Package
+# IMDT Renesas V2H SBC Board Support Package
 
 ## Prerequisites
 
@@ -27,18 +27,13 @@ TEMPLATECONF=${PWD}/sources/meta-imdt-renesas-internal/docs/template/conf/ sourc
 
 ## Building the Board Support Package
 
-The BSP supports the Renesas RZ/V2H EVKs (**`rzv2h-evk-dev`**, **`rzv2h-evk-alpha`** and **`rzv2h-evk-ver1`**), in addition to the IMDT RZ/V2H EVK (**`imdt-rzv2h-evk`**).
+The BSP supports the IMDT V2H SBC (**`imdt-v2h-sbc`**).
 
 You can either add the **`MACHINE`** definition to the **`conf/local.conf`** file, or specify it on the command line as shown below.
 
-### Renesas EVK (Alpha)
+
+### IMDT SBC
 
 ```sh
-MACHINE=rzv2h-evk-alpha bitbake core-image-minimal
-```
-
-### IMDT EVK
-
-```sh
-MACHINE=imdt-rzv2h-evk bitbake core-image-minimal
+MACHINE=imdt-v2h-sbc bitbake imdt-image-core
 ```

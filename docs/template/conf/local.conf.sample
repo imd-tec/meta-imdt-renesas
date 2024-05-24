@@ -290,7 +290,7 @@ DISTRO_FEATURES_NATIVESDK_remove = " x11"
 
 CIP_MODE = "Buster"
 
-INCOMPATIBLE_LICENSE = "GPLv3 GPLv3+"
+#INCOMPATIBLE_LICENSE = "GPLv3 GPLv3+"
 
 LICENSE_FLAGS_WHITELIST = " \
 	commercial_gstreamer1.0-plugins-ugly commercial_mpeg2dec \
@@ -326,13 +326,12 @@ WKS_SUPPORT ?= "1"
 WKS_DEFAULT_FILE_rzv2h-dev = "rz-image-bootpart-mmc.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-alpha = "rz-image-bootpart-esd_rzv2h.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-ver1 = "rz-image-bootpart-esd_rzv2h.wks"
-WKS_DEFAULT_FILE_imdt-rzv2h-evk = "rz-image-bootpart-esd_rzv2h.wks"
+WKS_DEFAULT_FILE_imdt-v2h-sbc = "imdt-image.wks"
 # Defines additional free disk space created in the image in Kbytes.
 IMAGE_ROOTFS_EXTRA_SPACE = "1048576"
 
 # Generate spdx files
 #INHERIT += "create-spdx"
-
 # Optional variables to generate spdx:
 # - SPDX_PRETTY: Make generated files more human readable (newlines, indentation)
 # - SPDX_ARCHIVE_PACKAGED: Add compressed archives of the files in the generated target packages.
