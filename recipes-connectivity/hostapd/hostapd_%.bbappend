@@ -9,7 +9,7 @@ SRC_URI_append = " \
    file://hostapd.service \
 "
 
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_AUTO_ENABLE_${PN} = "disable"
 
 do_install_append() {
    install -d ${D}${sysconfdir}
