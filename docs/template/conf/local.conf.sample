@@ -33,6 +33,7 @@
 #MACHINE ?= "genericx86-64"
 #MACHINE ?= "mpc8315e-rdb"
 #MACHINE ?= "edgerouter"
+MACHINE = "imdt-v2h-sbc"
 
 #
 # Where to place downloads
