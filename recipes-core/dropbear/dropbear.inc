@@ -7,33 +7,26 @@ SECTION = "console/network"
 #   public domain, OpenSSH 3.5p1, OpenSSH3.6.1p2, PuTTY
 LICENSE = "MIT & BSD-3-Clause & BSD-2-Clause & PD"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=25cf44512b7bc8966a48b6b1a9b7605f"
-                                        
+
 DEPENDS = "zlib virtual/crypt"
 RPROVIDES_${PN} = "ssh sshd"
 RCONFLICTS_${PN} = "openssh-sshd openssh"
 
-# break dependency on base package for -dev package
-# otherwise SDK fails to build as the main openssh and dropbear packages
-# conflict with each other
-RDEPENDS:${PN}-dev = ""
-
 DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'pam', 'libpam', '', d)}"
 
-#           file://0001-urandom-xauth-changes-to-options.h.patch 
-#           ${@bb.utils.contains('PACKAGECONFIG', 'disable-weak-ciphers', 'file://dropbear-disable-weak-ciphers.patch', '', d)} 
-#file://CVE-2020-36254.patch 
-#         file://CVE-2021-36369.patch
 SRC_URI = "http://matt.ucc.asn.au/dropbear/releases/dropbear-${PV}.tar.bz2 \
+           file://0001-urandom-xauth-changes-to-options.h.patch \
            file://init \
            file://dropbearkey.service \
            file://dropbear@.service \
            file://dropbear.socket \
            file://dropbear.default \
            ${@bb.utils.contains('DISTRO_FEATURES', 'pam', '${PAM_SRC_URI}', '', d)} \
-           "
-#file://0005-dropbear-enable-pam.patch file://0006-dropbear-configuration-file.patch 
+           ${@bb.utils.contains('PACKAGECONFIG', 'disable-weak-ciphers', 'file://dropbear-disable-weak-ciphers.patch', '', d)} "
 
-PAM_SRC_URI = "file://dropbear"
+PAM_SRC_URI = "file://0005-dropbear-enable-pam.patch \
+               file://0006-dropbear-configuration-file.patch \
+               file://dropbear"
 
 PAM_PLUGINS = "libpam-runtime \
 	pam-plugin-deny \
@@ -55,9 +48,9 @@ SBINCOMMANDS = "dropbear dropbearkey dropbearconvert"
 BINCOMMANDS = "dbclient ssh scp"
 EXTRA_OEMAKE = 'MULTI=1 SCPPROGRESS=1 PROGRAMS="${SBINCOMMANDS} ${BINCOMMANDS}"'
 
-#PACKAGECONFIG ?= "disable-weak-ciphers"
+PACKAGECONFIG ?= "disable-weak-ciphers"
 PACKAGECONFIG[system-libtom] = "--disable-bundled-libtom,--enable-bundled-libtom,libtommath libtomcrypt"
-#PACKAGECONFIG[disable-weak-ciphers] = ""
+PACKAGECONFIG[disable-weak-ciphers] = ""
 
 EXTRA_OECONF += "\
  ${@bb.utils.contains('DISTRO_FEATURES', 'pam', '--enable-pam', '--disable-pam', d)}"
@@ -65,6 +58,9 @@ EXTRA_OECONF += "\
 # This option appends to CFLAGS and LDFLAGS from OE
 # This is causing [textrel] QA warning
 EXTRA_OECONF += "--disable-harden"
+
+# musl does not implement wtmp/logwtmp APIs
+EXTRA_OECONF_append_libc-musl = " --disable-wtmp --disable-lastlog"
 
 do_install() {
 	install -d ${D}${sysconfdir} \

@@ -10,7 +10,16 @@ PV = "1.0"
 
 S = "${WORKDIR}/rpm"
 
-RDEPENDS_${PN} = "mmngr-user-module mmngrbuf-user-module media-ctl libv4l libopencv-core libopencv-imgproc"
+RDEPENDS_${PN} = " \
+    mmngr-user-module \
+    mmngrbuf-user-module \
+    kernel-module-mmngr \
+    kernel-module-mmngrbuf \
+    media-ctl \
+    libv4l \ 
+    libopencv-core \
+    libopencv-imgproc \
+"
 
 # Copy the contents of the RPM to the root filesystem
 do_install_append() {
