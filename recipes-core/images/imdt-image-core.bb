@@ -25,6 +25,7 @@ IMAGE_INSTALL_append = " \
     firmwared \
     hostapd \
     i2c-tools \
+    imdt-audio-utils \
     imdt-can-utils \
     imdt-ethernet-utils \
     imdt-pico-demos \
