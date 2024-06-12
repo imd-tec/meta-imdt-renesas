@@ -15,4 +15,5 @@ do_install_append () {
 	install -m 0744 ${WORKDIR}/v4l2-init.sh ${D}/home/root/v4l2-init.sh
 }
 
+RDEPENDS_${PN} += "bash"
 FILES_${PN} += "/home/root/v4l2-init.sh"
