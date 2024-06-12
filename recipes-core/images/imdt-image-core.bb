@@ -51,6 +51,10 @@ IMAGE_INSTALL_append = " \
     mtd-utils \
     murata-binaries \
     nano \
+    oca \
+    packagegroup-gstreamer1.0-plugins \  
+    packagegroup-multimedia-kernel-modules \
+    packagegroup-multimedia-libs \
     pciutils \
     tcf-agent \
     udev-extraconf \

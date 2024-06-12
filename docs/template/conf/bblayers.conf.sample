@@ -14,6 +14,8 @@ BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-renesas/meta-rzg2l \
   ${TOPDIR}/../sources/meta-renesas/meta-rzv2h \
   ${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai \
+  ${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva \
+  ${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs \
   ${TOPDIR}/../sources/meta-openembedded/meta-oe \
   ${TOPDIR}/../sources/meta-openembedded/meta-python \
   ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \
