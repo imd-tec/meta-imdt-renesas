@@ -27,4 +27,4 @@ SYSTEMD_SERVICE_${PN} = "imdt-libubootenv-config.service"
 FILES_${PN} += " \
     /opt/imdt/libubootenv/generate-fwenv-config.sh \
 "
-RRECOMMENDS_${PN}-bin_append_class-target = ""
+RRECOMMENDS_${PN}-bin_remove_class-target = "u-boot-default-env"
