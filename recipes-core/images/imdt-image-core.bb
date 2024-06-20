@@ -48,6 +48,7 @@ IMAGE_INSTALL_append = " \
     linux-firmware-sdiouartiw416 \
     memtester \
     minicom \
+    mmc-utils \
     mtd-utils \
     murata-binaries \
     nano \
@@ -56,8 +57,12 @@ IMAGE_INSTALL_append = " \
     packagegroup-multimedia-kernel-modules \
     packagegroup-multimedia-libs \
     pciutils \
+    swupdate \
+    swupdate-progress \
+    swupdate-www \
     tcf-agent \
     udev-extraconf \
+    u-boot-fw-utils \
     usbutils \
     util-linux \
     v4l2-init \
@@ -76,8 +81,6 @@ export HOST_EXTRACFLAGS="-I${OECORE_NATIVE_SYSROOT}/usr/include/ -L${OECORE_NATI
 # Force remake wic image if its inputs were changed (WIC_INPUT_DEPENDS are defined in each machine conf)
 # Note that environment variable WKS_FILE_DEPENDS can be used here, but it makes do_rootfs rerun as well
 do_image_wic[depends] += "${WIC_INPUT_DEPENDS}"
-
-PREFERRED_VERSION_dhcpcd = "9.4.0"
 
 # Default WKS is eMMC, except rzg2l devices which can support eSD boot
 WKS_DEFAULT_FILE = "rz-image-bootpart-mmc.wks"

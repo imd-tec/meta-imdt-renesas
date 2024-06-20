@@ -20,4 +20,5 @@ BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-openembedded/meta-python \
   ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \
   ${TOPDIR}/../sources/meta-imdt-renesas \
+  ${TOPDIR}/../sources/meta-swupdate \
   "

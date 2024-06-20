@@ -1,0 +1,52 @@
+software =
+{
+	version = "1.0.0";
+	hardware-compatibility: ["1.0"];
+        files:
+        (
+            {
+                filename = "Image";
+                path = "Image";
+                filesystem = "vfat";
+            },
+            {
+                filename = "imdt-v2h-sbc.dtb";
+                path = "imdt-v2h-sbc.dtb";
+                filesystem = "vfat";
+            },
+            {
+                filename = "fip-imdt-v2h-sbc.bin";
+                path = "fip-imdt-v2h-sbc.bin";
+                filesystem = "vfat";
+            },
+            {
+                filename = "bl2_bp_spi-imdt-v2h-sbc.bin";
+                path = "bl2_bp_spi-imdt-v2h-sbc.bin";
+                filesystem = "vfat";
+            },
+            {
+                filename = "bl2_bp_emmc-imdt-v2h-sbc.bin";
+                path = "bl2_bp_emmc-imdt-v2h-sbc.bin";
+                filesystem = "vfat";
+            }
+        );
+
+        images:
+        (
+            {
+                filename = "imdt-image-core-imdt-v2h-sbc.tar.gz";
+                type = "archive";
+                compressed = true;
+                filesystem = "ext4";
+                path = "/";
+            }
+        );
+
+        scripts:
+        (
+            {
+                filename = "update.sh";
+                type = "shellscript";
+            }
+        );
+};

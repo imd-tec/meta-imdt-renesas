@@ -1,0 +1,14 @@
+#
+# Copyright (c) 2022 IMD Technologies
+#
+
+[Unit]
+Description=Update the U-Boot environment config file
+After=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/imdt/libubootenv/generate-fwenv-config.sh
+
+[Install]
+WantedBy=multi-user.target
