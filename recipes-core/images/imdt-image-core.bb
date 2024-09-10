@@ -71,6 +71,8 @@ IMAGE_INSTALL_append = " \
     wireless-tools \
     wpa-supplicant \
     yavta \
+    opencv \
+    opencv-dev \
 "
 
 # Environment setup, support building kernel modules with kernel src in SDK
@@ -88,3 +90,5 @@ WKS_DEFAULT_FILE = "rz-image-bootpart-mmc.wks"
 #WKS_DEFAULT_FILE_smarc-rzg2l = "rz-image-bootpart-esd-pmic.wks"
 WKS_FILE ?= "${@oe.utils.conditional("WKS_SUPPORT", "1", "${WKS_DEFAULT_FILE}", "", d)}"
 
+# Add DRP AI to the SDK so that the Renesas AI tools will work with the Yocto SDK
+TOOLCHAIN_TARGET_TASK_append = " drpai "
