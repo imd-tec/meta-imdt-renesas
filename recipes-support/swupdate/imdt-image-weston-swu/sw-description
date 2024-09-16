@@ -34,7 +34,7 @@ software =
         images:
         (
             {
-                filename = "imdt-image-core-imdt-v2h-sbc.tar.gz";
+                filename = "imdt-image-weston-imdt-v2h-sbc.tar.gz";
                 type = "archive";
                 compressed = true;
                 filesystem = "ext4";
