@@ -25,4 +25,4 @@ SWUPDATE_IMAGES_imdt-v2h-sbc = " \
 "
 SDIMG_ROOTFS_TYPE = "ext4.gz"
 # SWUpdate requires that the root filesystem be compressed using GZip
-SWUPDATE_IMAGES_FSTYPES[imdt-image-weston-imdt-v2h-sbc] = ".tar.gz .wic.gz"
+SWUPDATE_IMAGES_FSTYPES[imdt-image-weston-imdt-v2h-sbc] = ".tar.gz"
