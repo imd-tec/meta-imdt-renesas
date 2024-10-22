@@ -13,12 +13,13 @@ SDKIMAGE_FEATURES_append = " \
 
 IMAGE_INSTALL = "packagegroup-core-boot ${CORE_IMAGE_EXTRA_INSTALL}"
 IMAGE_INSTALL_append = " \
-    app-yolov2-cam \
+    ${@oe.utils.conditional('BBFILE_COLLECTIONS_rz-drpai', '1', ' app-yolov2-cam', '', d)} \
     bash \
     bonnie++ \
     busybox \
     can-utils \
     coreutils \
+    devmem2 \
     dhcpcd \
     dosfstools \
     ethtool \
@@ -39,7 +40,6 @@ IMAGE_INSTALL_append = " \
     kernel-image \
     kernel-modules \
     kernel-module-nxp-wlan \
-    kernel-module-udmabuf \
     kernel-module-uvcvideo \
     libgpiod-tools \
     libjpeg-turbo-dev \
@@ -52,7 +52,7 @@ IMAGE_INSTALL_append = " \
     mtd-utils \
     murata-binaries \
     nano \
-    oca \
+    ${@oe.utils.conditional('BBFILE_COLLECTIONS_rz-opencva', '1', 'oca', '', d)} \
     packagegroup-gstreamer1.0-plugins \  
     packagegroup-multimedia-kernel-modules \
     packagegroup-multimedia-libs \
@@ -89,6 +89,3 @@ WKS_DEFAULT_FILE = "rz-image-bootpart-mmc.wks"
 #WKS_DEFAULT_FILE_rzg2l = "rz-image-bootpart-esd.wks"
 #WKS_DEFAULT_FILE_smarc-rzg2l = "rz-image-bootpart-esd-pmic.wks"
 WKS_FILE ?= "${@oe.utils.conditional("WKS_SUPPORT", "1", "${WKS_DEFAULT_FILE}", "", d)}"
-
-# Add DRP AI to the SDK so that the Renesas AI tools will work with the Yocto SDK
-TOOLCHAIN_TARGET_TASK_append = " drpai "

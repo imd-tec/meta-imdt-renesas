@@ -1,0 +1,14 @@
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index d9fc45cb2528..45a9f99e14f8 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -1174,3 +1174,9 @@ adv7533_out: endpoint@1 {
+ &adc {
+ 	status = "okay";
+ };
++
++&drpai0 {
++	memory-region = <&drp_reserved>;
++	image-memory-region = <&image_buf0>;
++	status = "okay";
++};

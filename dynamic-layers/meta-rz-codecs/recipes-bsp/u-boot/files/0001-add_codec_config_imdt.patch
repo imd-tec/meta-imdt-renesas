@@ -1,0 +1,9 @@
+diff --git a/configs/imdt-v2h-sbc_defconfig b/configs/imdt-v2h-sbc_defconfig
+index 5a95c84245..366db84cc4 100644
+--- a/configs/imdt-v2h-sbc_defconfig
++++ b/configs/imdt-v2h-sbc_defconfig
+@@ -98,3 +98,3 @@ CONFIG_ENV_OFFSET=0x20000
+ 
+-CONFIG_RZ_CODECS_IMDT_V2H=n
++CONFIG_RZ_CODECS_IMDT_V2H=y
+ 

@@ -1,0 +1,9 @@
+diff --git a/configs/imdt-v2h-sbc_defconfig b/configs/imdt-v2h-sbc_defconfig
+index 5a95c84245..7d57d23f14 100644
+--- a/configs/imdt-v2h-sbc_defconfig
++++ b/configs/imdt-v2h-sbc_defconfig
+@@ -106,3 +106,3 @@ CONFIG_RZ_DRPAI_IMDT_V2H=n
+ 
+-CONFIG_RZ_OPENCVA_IMDT_V2H=n
++CONFIG_RZ_OPENCVA_IMDT_V2H=y
+ 

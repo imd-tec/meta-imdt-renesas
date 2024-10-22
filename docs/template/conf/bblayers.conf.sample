@@ -5,6 +5,12 @@ POKY_BBLAYERS_CONF_VERSION = "2"
 BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
+IMDT_INTERNAL = "${@os.path.isdir("${TOPDIR}/../sources/meta-imdt-renesas-internal")}"
+RZ_FEATURE_DRPAI = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai")}"
+RZ_FEATURE_OPENCVA = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva")}"
+RZ_FEATURE_CODEC = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs")}"
+RZ_FEATURE_GRAPHICS = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics")}"
+
 BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-gplv2 \
   ${TOPDIR}/../sources/poky/meta \
@@ -13,11 +19,14 @@ BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-renesas/meta-rz-common \
   ${TOPDIR}/../sources/meta-renesas/meta-rzg2l \
   ${TOPDIR}/../sources/meta-renesas/meta-rzv2h \
-  ${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai \
-  ${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva \
   ${TOPDIR}/../sources/meta-openembedded/meta-oe \
   ${TOPDIR}/../sources/meta-openembedded/meta-python \
   ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \
   ${TOPDIR}/../sources/meta-imdt-renesas \
   ${TOPDIR}/../sources/meta-swupdate \
+  ${@'${TOPDIR}/../sources/meta-imdt-renesas-internal' if '${IMDT_INTERNAL}' == 'True' else ''} \
+  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai' if '${RZ_FEATURE_DRPAI}' == 'True' else ''} \
+  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva' if '${RZ_FEATURE_OPENCVA}' == 'True' else ''} \
+  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs' if '${RZ_FEATURE_CODEC}' == 'True' else ''} \
+  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics' if '${RZ_FEATURE_GRAPHICS}' == 'True' else ''} \
   "
