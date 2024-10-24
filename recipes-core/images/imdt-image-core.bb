@@ -11,9 +11,8 @@ SDKIMAGE_FEATURES_append = " \
      staticdev-pkgs \
 "
 
-IMAGE_INSTALL = "packagegroup-core-boot ${CORE_IMAGE_EXTRA_INSTALL}"
+IMAGE_INSTALL_append = " ${CORE_IMAGE_EXTRA_INSTALL} "
 IMAGE_INSTALL_append = " \
-    ${@oe.utils.conditional('BBFILE_COLLECTIONS_rz-drpai', '1', ' app-yolov2-cam', '', d)} \
     bash \
     bonnie++ \
     busybox \
@@ -52,7 +51,6 @@ IMAGE_INSTALL_append = " \
     mtd-utils \
     murata-binaries \
     nano \
-    ${@oe.utils.conditional('BBFILE_COLLECTIONS_rz-opencva', '1', 'oca', '', d)} \
     packagegroup-gstreamer1.0-plugins \  
     packagegroup-multimedia-kernel-modules \
     packagegroup-multimedia-libs \
