@@ -1,14 +1,16 @@
 #
-# Copyright (c) 2022 IMD Technologies
+# Copyright (c) 2024 IMD Technologies
 #
 
 [Unit]
-Description=Update the U-Boot environment config file
-After=sysinit.target
+Description=Mount environment partition to /env
+After=local-fs.target
 
 [Service]
 Type=oneshot
-ExecStart=/opt/imdt/libubootenv/generate-fwenv-config.sh
+ExecStart=/opt/imdt/libubootenv/mount-env.sh
+RemainAfterExit=true
 
 [Install]
 WantedBy=multi-user.target
+

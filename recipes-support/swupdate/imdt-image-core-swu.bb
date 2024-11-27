@@ -16,8 +16,6 @@ SRC_URI_imdt-v2h-sbc = " \
 IMAGE_DEPENDS = "imdt-image-core"
 
 SWUPDATE_IMAGES_imdt-v2h-sbc = " \
-    Image \
-    imdt-v2h-sbc.dtb \
     bl2_bp_spi-imdt-v2h-sbc.bin \
     bl2_bp_emmc-imdt-v2h-sbc.bin \
     fip-imdt-v2h-sbc.bin \

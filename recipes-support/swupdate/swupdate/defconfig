@@ -13,7 +13,7 @@
 # CONFIG_CURL is not set
 # CONFIG_CURL_SSL is not set
 # CONFIG_DISKFORMAT is not set
-# CONFIG_SYSTEMD is not set
+CONFIG_SYSTEMD=y
 CONFIG_DEFAULT_CONFIG_FILE="/etc/swupdate.cfg"
 CONFIG_SCRIPTS=y
 # CONFIG_HW_COMPATIBILITY is not set
@@ -35,7 +35,7 @@ CONFIG_LUAPKG="lua"
 #
 CONFIG_CROSS_COMPILE=""
 CONFIG_SYSROOT=""
-CONFIG_EXTRA_CFLAGS=" -O2 -pipe -g -feliminate-unused-debug-types" 
+CONFIG_EXTRA_CFLAGS=" -O2 -pipe -g -feliminate-unused-debug-types"
 CONFIG_EXTRA_LDFLAGS="-Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed -Wl,-z,relro,-z,now"
 CONFIG_EXTRA_LDLIBS=""
 

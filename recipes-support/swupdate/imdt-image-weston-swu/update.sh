@@ -30,6 +30,15 @@ function get_update_device
 
 if [ $1 == "preinst" ]; then
 
+	#!/bin/bash
+	echo "This script is: $0"
+	echo "Called by: $(ps -o comm= $PPID)"
+	if [[ "$0" == "$BASH_SOURCE" ]]; then
+		echo "The script is executed directly."
+	else
+		echo "The script is being sourced."
+	fi
+
 	# get the current root device
 	get_current_root_device
 
@@ -38,17 +47,18 @@ if [ $1 == "preinst" ]; then
 	get_update_device
 
 	# create symlinks for the update process
-    	ln -sf $UPDATE_BOOT_DEV /dev/update-boot
+    ln -sf $UPDATE_BOOT_DEV /dev/update
 
 	# write boot img
 	echo "This will overwrite the current bootloader! Changes CANNOT be reverted!"
+	echo "${PWD}"
 
 	# if current_root is sdcard, flash the QSPI with new bootloaders
 	if [ "/dev/mmcblk1p2" == $CURRENT_ROOT ] || [ "/dev/mmcblk1p3" == $CURRENT_ROOT ]; then
-		echo SSD
+		echo SD
 		dd if=/dev/zero of=boot.img bs=1024 count=1024 
-		dd if=bl2_bp_spi-imdt-v2h-sbc.bin of=boot.img  conv=notrunc 
-		dd if=fip-imdt-v2h-sbc.bin  of=boot.img conv=notrunc bs=512 seek=768 
+		dd if=/tmp/bl2_bp_spi-imdt-v2h-sbc.bin of=boot.img  conv=notrunc 
+		dd if=/tmp/fip-imdt-v2h-sbc.bin  of=boot.img conv=notrunc bs=512 seek=768 
 		flashcp -v boot.img /dev/mtd0 
 	fi
 
@@ -59,8 +69,8 @@ if [ $1 == "preinst" ]; then
 		mmc bootpart enable 1 0 /dev/mmcblk0  # enable the first boot-area 0 for boot, no ack
 		mmc bootbus set single_backward x1 x8 /dev/mmcblk0  # setup the boot bus config
 		echo 0 > /sys/block/mmcblk0boot0/force_ro
-		dd if=bl2_bp_emmc-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=1 >/dev/null 2>/dev/null
-		dd if=fip-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=768 >/dev/null 2>/dev/null
+		dd if=/tmp/bl2_bp_emmc-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=1 >/dev/null 2>/dev/null
+		dd if=/tmp/fip-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=768 >/dev/null 2>/dev/null
 	fi
 
 fi
@@ -72,7 +82,7 @@ if [ $1 == "postinst" ]; then
 
 	# get the devices to be updated
 	get_update_part
-    	get_update_device
+    get_update_device
 
 	fw_setenv mmcpart $UPDATE_BOOT_PART
 fi
