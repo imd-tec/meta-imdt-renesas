@@ -71,6 +71,8 @@ IMAGE_INSTALL_append = " \
     yavta \
     opencv \
     opencv-dev \
+    rz-tvm-runtime \
+    libsdl2 \
 "
 
 # Environment setup, support building kernel modules with kernel src in SDK
