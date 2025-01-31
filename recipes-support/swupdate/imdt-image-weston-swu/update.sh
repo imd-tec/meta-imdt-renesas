@@ -38,8 +38,8 @@ function write_bootloader
 	if [ "/dev/mmcblk1p2" == $CURRENT_ROOT ] || [ "/dev/mmcblk1p3" == $CURRENT_ROOT ]; then
 		echo SD
 		dd if=/dev/zero of=boot.img bs=1024 count=1024 
-		dd if=/tmp/bl2_bp_spi-imdt-v2h-sbc.bin of=boot.img  conv=notrunc 
-		dd if=/tmp/fip-imdt-v2h-sbc.bin  of=boot.img conv=notrunc bs=512 seek=768 
+		dd if=/tmp/bl2_bp_spi-imdt-v2h-sbc.bin of=boot.img  conv=notrunc,fsync 
+		dd if=/tmp/fip-imdt-v2h-sbc.bin  of=boot.img conv=notrunc,fsync bs=512 seek=768 
 		flashcp -v boot.img /dev/mtd0 
 	fi
 
@@ -52,6 +52,51 @@ function write_bootloader
 		dd if=/tmp/bl2_bp_emmc-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=1 >/dev/null 2>/dev/null
 		dd if=/tmp/fip-imdt-v2h-sbc.bin of=/dev/mmcblk0boot0 bs=512 skip=0 seek=768 >/dev/null 2>/dev/null
 	fi
+}
+
+function update_bootcmd
+{
+	# Define the variable name we're looking for
+	VAR_NAME="bootcmd"
+
+	# Read the current U-Boot environment
+	CURRENT_VALUE=$(fw_printenv $VAR_NAME 2>/dev/null | cut -d '=' -f2-)
+
+	# Check if the variable was found
+	if [ -z "$CURRENT_VALUE" ]; then
+		echo "Error: Unable to read $VAR_NAME from U-Boot environment"
+		return 1
+	fi
+
+	echo "Current $VAR_NAME: $CURRENT_VALUE"
+
+	# Define the injection point and new string to inject
+	PREPEND_STRING="run update_post; "
+
+	# Remove any existing instances of PREPEND_STRING from CURRENT_VALUE
+	CLEANED_VALUE="${CURRENT_VALUE//$PREPEND_STRING/}"
+
+	# Prepend the cleaned value with PREPEND_STRING
+	NEW_VALUE="${PREPEND_STRING}${CLEANED_VALUE}"
+	echo "Setting $VAR_NAME to: $NEW_VALUE"
+
+	# Write the new value back to the U-Boot environment
+	fw_setenv $VAR_NAME "$NEW_VALUE"
+
+	# Verify the change
+	UPDATED_VALUE=$(fw_printenv $VAR_NAME 2>/dev/null | cut -d '=' -f2-)
+	if [ "$UPDATED_VALUE" = "$NEW_VALUE" ]; then
+		echo "Successfully updated $VAR_NAME to: $UPDATED_VALUE"
+	else
+		echo "Error: Failed to update $VAR_NAME"
+		return 1
+	fi
+
+	# Get the partition we just updated
+	get_update_part
+
+	echo "Setting update_post to reset U-Boot environment"
+	fw_setenv update_post "env default -a; setenv mmcpart ${UPDATE_BOOT_PART}; saveenv;"
 }
 
 if [ $1 == "preinst" ]; then
@@ -90,9 +135,10 @@ if [ $1 == "preinst" ]; then
 		if [ "$overwrite_bl_value" -eq 1 ]; then
 			echo "overwrite_bl is set to 1. Flashing bootloader..."
 			write_bootloader
-			# reset the env variable back to zero
-			echo "clearing bootloader overwrite flag..."
-			fw_setenv "overwrite_bl" "0"
+
+			# No need to reset overwrite_bl flag to 0, as it will be reset by the update_post
+			# update the bootcmd
+			update_bootcmd
 		fi
 	fi
 fi
@@ -106,5 +152,5 @@ if [ $1 == "postinst" ]; then
 	get_update_part
     get_update_device
 
-	fw_setenv mmcpart $UPDATE_BOOT_PART
+	sync
 fi

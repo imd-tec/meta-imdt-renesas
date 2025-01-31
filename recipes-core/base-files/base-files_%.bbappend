@@ -1,7 +1,7 @@
 do_install_append() {
     # Navigate to the repo manifest directory
     MANIFEST_DIR="${TOPDIR}/../.repo/manifests"
-    BSP_VERSION="NO_TAG"
+    BSP_VERSION="0.0.0"
     MANIFEST_NAME="Unknown"
 
     # Check if the manifest directory exists
