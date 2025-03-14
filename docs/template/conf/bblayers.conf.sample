@@ -7,8 +7,8 @@ BBFILES ?= ""
 
 IMDT_INTERNAL = "${@os.path.isdir("${TOPDIR}/../sources/meta-imdt-renesas-internal")}"
 RZ_FEATURE_DRPAI = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai")}"
-RZ_FEATURE_OPENCVA = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva")}"
-RZ_FEATURE_CODEC = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs")}"
+RZ_FEATURE_OPENCVA = "${@'True' if os.path.isdir('${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva') and d.getVar('MACHINE') == 'imdt-v2h-sbc' else 'False'}"
+RZ_FEATURE_CODEC = "${@'True' if os.path.isdir('${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs') and d.getVar('MACHINE') == 'imdt-v2h-sbc' else 'False'}"
 RZ_FEATURE_GRAPHICS = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics")}"
 
 BBLAYERS ?= " \
@@ -19,6 +19,7 @@ BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-renesas/meta-rz-common \
   ${TOPDIR}/../sources/meta-renesas/meta-rzg2l \
   ${TOPDIR}/../sources/meta-renesas/meta-rzv2h \
+  ${@'${TOPDIR}/../sources/meta-renesas/meta-rzv2n' if d.getVar('MACHINE') == 'imdt-v2n-sbc' else ''} \
   ${TOPDIR}/../sources/meta-openembedded/meta-oe \
   ${TOPDIR}/../sources/meta-openembedded/meta-python \
   ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \

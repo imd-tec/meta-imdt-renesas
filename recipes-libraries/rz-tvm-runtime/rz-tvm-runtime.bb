@@ -3,7 +3,7 @@ DESCRIPTION = "Apache TVM Runtime"
 LICENSE = "CLOSED"
 
 SRC_URI = "git://git@github.com/renesas-rz/rzv_drp-ai_tvm.git;protocol=ssh;branch=main"
-SRCREV = "56b3dd425ba694dbbdd7766fa1295671f1ffccf0" 
+SRCREV = "a8543556650ef819e33f37cc9da850ce9f76f0d0" 
 PV = "git${SRCPV}"
 S = "${WORKDIR}/git/"
 # Only compatible with the V2H and V2N

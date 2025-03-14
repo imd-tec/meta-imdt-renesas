@@ -152,5 +152,7 @@ if [ $1 == "postinst" ]; then
 	get_update_part
     get_update_device
 
+	fw_setenv mmcpart $UPDATE_BOOT_PART
+
 	sync
 fi

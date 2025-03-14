@@ -1,0 +1,2 @@
+COMPATIBLE_MACHINE_append = "|r9a09g056"
+#COMPATIBLE_MACHINE_append = "|rzv2n"

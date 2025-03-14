@@ -1,17 +1,15 @@
-SRC_URI = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0"
-SRCREV = "e9855f0543a36926b6c8b7bcee3ae3aa5b4f2ffc"
+SRC_URI_imdt-v2h-sbc = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0"
+SRCREV_imdt-v2h-sbc = "e9855f0543a36926b6c8b7bcee3ae3aa5b4f2ffc"
+# Note: The V2N Trusted firmware from Renesas' repository doesn't boot when the Mali driver is enabled
+SRC_URI_imdt-v2n-sbc = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0-v2n"
+SRCREV_imdt-v2n-sbc = "5fb19e3ed5088646442e782f34323df940f0c3b2"
 
-COMPATIBLE_MACHINE_rzv2h = "(rzv2h-dev|rzv2h-evk-alpha|rzv2h-evk-ver1|imdt-v2h-sbc)"
+COMPATIBLE_MACHINE_rzv2h_append = "|imdt-v2h-sbc"
+COMPATIBLE_MACHINE_rzv2n_append = "|imdt-v2n-sbc"
 
 # Checked the rzg_trusted-firmware-a.tar.bz2 archive
 # The BOARD variable is used to define the path to a directory containing a *.mk file
 # This Makefile specifies the source files for the LPDDR4 memory driver and some configuration variables
 # For now, it's safe to use the files for the evk_alpha
 EXTRA_FLAGS_imdt-v2h-sbc = "BOARD=evk_alpha ENABLE_STACK_PROTECTOR=default"
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI_append = " \
-	file://0001-Separate-DDR-ch0-and-ch1-setting.patch \
-	file://0002-DDR-ch0-DMD-Off.patch \
-"
+EXTRA_FLAGS_imdt-v2n-sbc = "BOARD=evk_1 ENABLE_STACK_PROTECTOR=default"

@@ -3,10 +3,11 @@ SRC_URI += " \
 	file://0001-Rebrand-the-SWUpdate-UI.patch \
 	file://defconfig \
 "
-do_install_append_imdt-v2c-sbc() {
-	echo "v2h-sbc 1.0" > ${D}/${sysconfdir}/hwrevision
+
+do_install_append_${MACHINE}() {
+	echo "${MACHINE}" > ${D}/${sysconfdir}/hwrevision
 }
-FILES_${PN}_append_imdt-v2c-sbc = " \ 
+
+FILES_${PN}_append_${MACHINE} = " \ 
 	${sysconfdir}/hwrevision \ 
 "
-

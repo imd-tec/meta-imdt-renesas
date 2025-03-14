@@ -33,7 +33,7 @@
 #MACHINE ?= "genericx86-64"
 #MACHINE ?= "mpc8315e-rdb"
 #MACHINE ?= "edgerouter"
-MACHINE = "imdt-v2h-sbc"
+#MACHINE = "imdt-v2n-sbc"
 
 #
 # Where to place downloads
@@ -328,6 +328,9 @@ WKS_DEFAULT_FILE_rzv2h-dev = "rz-image-bootpart-mmc.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-alpha = "rz-image-bootpart-esd_rzv2h.wks"
 WKS_DEFAULT_FILE_rzv2h-evk-ver1 = "rz-image-bootpart-esd_rzv2h.wks"
 WKS_DEFAULT_FILE_imdt-v2h-sbc = "imdt-image.wks"
+WKS_DEFAULT_FILE_imdt-v2n-sbc = "imdt-image.wks"
+WKS_DEFAULT_FILE_rzv2n-dev = "rz-image-bootpart-mmc.wks"
+WKS_DEFAULT_FILE_rzv2n-evk = "rz-image-bootpart-esd_rzv2n.wks"
 # Defines additional free disk space created in the image in Kbytes.
 IMAGE_ROOTFS_EXTRA_SPACE = "1048576"
 

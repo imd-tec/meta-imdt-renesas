@@ -85,7 +85,7 @@ export HOST_EXTRACFLAGS="-I${OECORE_NATIVE_SYSROOT}/usr/include/ -L${OECORE_NATI
 do_image_wic[depends] += "${WIC_INPUT_DEPENDS}"
 
 # Default WKS is eMMC, except rzg2l devices which can support eSD boot
-WKS_DEFAULT_FILE = "rz-image-bootpart-mmc.wks"
+WKS_DEFAULT_FILE ?= "rz-image-bootpart-mmc.wks"
 #WKS_DEFAULT_FILE_rzg2l = "rz-image-bootpart-esd.wks"
 #WKS_DEFAULT_FILE_smarc-rzg2l = "rz-image-bootpart-esd-pmic.wks"
 WKS_FILE ?= "${@oe.utils.conditional("WKS_SUPPORT", "1", "${WKS_DEFAULT_FILE}", "", d)}"
