@@ -1,8 +1,5 @@
 SRC_URI_imdt-v2h-sbc = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0"
 SRCREV_imdt-v2h-sbc = "e9855f0543a36926b6c8b7bcee3ae3aa5b4f2ffc"
-# Note: The V2N Trusted firmware from Renesas' repository doesn't boot when the Mali driver is enabled
-SRC_URI_imdt-v2n-sbc = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0-v2n"
-SRCREV_imdt-v2n-sbc = "5fb19e3ed5088646442e782f34323df940f0c3b2"
 
 COMPATIBLE_MACHINE_rzv2h_append = "|imdt-v2h-sbc"
 COMPATIBLE_MACHINE_rzv2n_append = "|imdt-v2n-sbc"

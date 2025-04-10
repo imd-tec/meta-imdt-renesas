@@ -5,12 +5,56 @@ POKY_BBLAYERS_CONF_VERSION = "2"
 BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
-IMDT_INTERNAL = "${@os.path.isdir("${TOPDIR}/../sources/meta-imdt-renesas-internal")}"
-RZ_FEATURE_DRPAI = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai")}"
-RZ_FEATURE_OPENCVA = "${@'True' if os.path.isdir('${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva') and d.getVar('MACHINE') == 'imdt-v2h-sbc' else 'False'}"
-RZ_FEATURE_CODEC = "${@'True' if os.path.isdir('${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs') and d.getVar('MACHINE') == 'imdt-v2h-sbc' else 'False'}"
-RZ_FEATURE_GRAPHICS = "${@os.path.isdir("${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics")}"
+IMDT_INTERNAL = "${TOPDIR}/../sources/meta-imdt-renesas-internal"
+RZ_FEATURE_DRPAI_V2N = "${TOPDIR}/../sources/renesas-layers/rzv2n_drp-ai_driver/meta-rz-features/meta-rz-drpai"
+RZ_FEATURE_DRPAI_V2H = "${TOPDIR}/../sources/renesas-layers/rzv2h_drp-ai_driver/meta-rz-features/meta-rz-drpai"
+RZ_FEATURE_OPENCVA_V2N = "${TOPDIR}/../sources/renesas-layers/rzv2n_opencv_accelerator/meta-rz-features/meta-rz-opencva"
+RZ_FEATURE_OPENCVA_V2H = "${TOPDIR}/../sources/renesas-layers/rzv2h_opencv_accelerator/meta-rz-features/meta-rz-opencva"
+RZ_FEATURE_CODEC = "${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs"
+RZ_FEATURE_GRAPHICS = "${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics"
 
+
+HAS_IMDT_INTERNAL = "${@os.path.isdir('${IMDT_INTERNAL}')}"
+HAS_RZ_FEATURE_DRPAI_V2N = "${@os.path.isdir('${RZ_FEATURE_DRPAI_V2N}')}"
+HAS_RZ_FEATURE_DRPAI_V2H = "${@os.path.isdir('${RZ_FEATURE_DRPAI_V2H}')}"
+HAS_RZ_FEATURE_OPENCVA_V2N = "${@os.path.isdir('${RZ_FEATURE_OPENCVA_V2N}')}"
+HAS_RZ_FEATURE_OPENCVA_V2H = "${@os.path.isdir('${RZ_FEATURE_OPENCVA_V2H}')}"
+HAS_RZ_FEATURE_CODEC = "${@os.path.isdir('${RZ_FEATURE_CODEC}')}"
+HAS_RZ_FEATURE_GRAPHICS = "${@os.path.isdir('${RZ_FEATURE_GRAPHICS}')}"
+
+# NOTE
+# There are some feature layers that can cause conflicts. This varies between platforms (i.e. V2N and V2H have different rules). 
+# When multiple conflicting layers are present, only one is included. The layer that is included follows the following prioirty:
+
+# Layer prioirities for V2H - OPENCVA and CODECS conflict.
+# 1. CODECS
+# 2. OPENCVA
+
+RZ_FEATURE_V2H_CODEC_OCVA = "${@ \
+    ('${RZ_FEATURE_CODEC}' if '${HAS_RZ_FEATURE_CODEC}' == 'True' else \
+     ('${RZ_FEATURE_OPENCVA_V2H}' if '${HAS_RZ_FEATURE_OPENCVA_V2H}' == 'True' else '')) \
+    if '${MACHINE}' == 'imdt-v2h-sbc' else '' \
+}"
+
+
+V2H_DRPAI = "${@ \
+    ('${RZ_FEATURE_DRPAI_V2H}' if '${HAS_RZ_FEATURE_DRPAI_V2H}' == 'True' else '') \
+    if '${MACHINE}' == 'imdt-v2h-sbc' else '' \
+}"
+
+# Layer Priorities for V2N - OPENCVA, CODECS and DRPAI conflict.
+# 1. DRPAI
+# 2. CODECS
+# 3. OPENCVA
+
+RZ_FEATURE_V2N_DRPAI_CODEC_OCVA = "${@ \
+('${RZ_FEATURE_DRPAI_V2N}' if '${HAS_RZ_FEATURE_DRPAI_V2N}' == 'True' else \
+     ('${RZ_FEATURE_CODEC}' if '${HAS_RZ_FEATURE_CODEC}' == 'True' else \
+      ('${RZ_FEATURE_OPENCVA_V2N}' if '${HAS_RZ_FEATURE_OPENCVA_V2N}' == 'True' else ''))) \
+    if '${MACHINE}' == 'imdt-v2n-sbc' else '' \
+}"
+
+# Order of precedence for 
 BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-gplv2 \
   ${TOPDIR}/../sources/poky/meta \
@@ -19,15 +63,15 @@ BBLAYERS ?= " \
   ${TOPDIR}/../sources/meta-renesas/meta-rz-common \
   ${TOPDIR}/../sources/meta-renesas/meta-rzg2l \
   ${TOPDIR}/../sources/meta-renesas/meta-rzv2h \
-  ${@'${TOPDIR}/../sources/meta-renesas/meta-rzv2n' if d.getVar('MACHINE') == 'imdt-v2n-sbc' else ''} \
+  ${@'${TOPDIR}/../sources/meta-renesas/meta-rzv2n' if '${MACHINE}' == 'imdt-v2n-sbc' else ''} \
   ${TOPDIR}/../sources/meta-openembedded/meta-oe \
   ${TOPDIR}/../sources/meta-openembedded/meta-python \
   ${TOPDIR}/../sources/meta-openembedded/meta-multimedia \
   ${TOPDIR}/../sources/meta-imdt-renesas \
   ${TOPDIR}/../sources/meta-swupdate \
-  ${@'${TOPDIR}/../sources/meta-imdt-renesas-internal' if '${IMDT_INTERNAL}' == 'True' else ''} \
-  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-drpai' if '${RZ_FEATURE_DRPAI}' == 'True' else ''} \
-  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-opencva' if '${RZ_FEATURE_OPENCVA}' == 'True' else ''} \
-  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-codecs' if '${RZ_FEATURE_CODEC}' == 'True' else ''} \
-  ${@'${TOPDIR}/../sources/meta-rz-features/meta-rz-graphics' if '${RZ_FEATURE_GRAPHICS}' == 'True' else ''} \
+  ${@'${IMDT_INTERNAL}' if '${HAS_IMDT_INTERNAL}' == 'True' else ''} \
+  ${@'${RZ_FEATURE_GRAPHICS}' if '${HAS_RZ_FEATURE_GRAPHICS}' == 'True' else ''} \
+  ${V2H_DRPAI} \
+  ${RZ_FEATURE_V2H_CODEC_OCVA} \
+  ${RZ_FEATURE_V2N_DRPAI_CODEC_OCVA} \
   "

@@ -7,8 +7,8 @@ index d109571455d2..9f3527f0a13d 100644
  };
  
 +&drp1 {
-+	memory-region = <&codec0>;
-+	memory-oca-region = <&opencva0>;
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
 +	status = "okay";
 +};
 +

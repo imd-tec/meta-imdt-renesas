@@ -1,0 +1,18 @@
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
+index 9fc6f75de832..d2e0db45d3b7 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
+@@ -84,6 +84,13 @@ &adc0 {
+ 	status = "okay";
+ };
+ 
++&drp1 {
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
++	memory-shared-for-drpai-ext-cont = <&shared_drp_reserved>;
++	status = "okay";
++};
++
+ &adc1 {
+ 	status = "okay";
+ };

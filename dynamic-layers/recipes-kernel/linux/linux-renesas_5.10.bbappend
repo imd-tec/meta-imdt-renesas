@@ -1,5 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI_append_imdt-v2h-sbc += "\
-	file://add_drp1_dts.patch \
+SRC_URI_append += "\
+	file://add_drp1_v2h_dts.patch \
+	file://add_drp1_v2n_dts.patch \
 "

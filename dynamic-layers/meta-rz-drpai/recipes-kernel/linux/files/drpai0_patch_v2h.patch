@@ -1,0 +1,17 @@
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index d109571455d2..d4c0e61ce3c8 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -119,6 +119,12 @@ &usb2_phy1 {
+ 	status = "okay";
+ };
+ 
++&drpai0 {
++    memory-region = <&drp_reserved>;
++    image-memory-region = <&image_buf0>;
++	status = "okay";
++};
++
+ &adc {
+ 	status = "okay";
+ };
