@@ -73,6 +73,7 @@ IMAGE_INSTALL_append = " \
     opencv-dev \
     rz-tvm-runtime \
     libsdl2 \
+    clinfo \
 "
 
 # Environment setup, support building kernel modules with kernel src in SDK
