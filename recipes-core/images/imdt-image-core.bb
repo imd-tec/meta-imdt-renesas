@@ -42,6 +42,7 @@ IMAGE_INSTALL_append = " \
     kernel-module-uvcvideo \
     libgpiod-tools \
     libjpeg-turbo-dev \
+    libgomp \
     libusb1 \
     linux-firmware-ap1302 \
     linux-firmware-sdiouartiw416 \
