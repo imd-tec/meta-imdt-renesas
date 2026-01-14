@@ -1,5 +1,5 @@
 SRC_URI_imdt-v2h-sbc = "git://git@github.com/imd-tec/rzg-trusted-firmware-a.git;protocol=ssh;branch=imdt-v2.7.0"
-SRCREV_imdt-v2h-sbc = "e9855f0543a36926b6c8b7bcee3ae3aa5b4f2ffc"
+SRCREV_imdt-v2h-sbc = "c2a24c0c5dc55f9fd02eff1b5ed819e2d63ea419"
 
 COMPATIBLE_MACHINE_rzv2h_append = "|imdt-v2h-sbc"
 COMPATIBLE_MACHINE_rzv2n_append = "|imdt-v2n-sbc"
