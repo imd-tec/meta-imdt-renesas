@@ -1,3 +1,8 @@
+REPO_DIR = "${TOPDIR}/../.repo"
+
+do_install[file-checksums] += "${REPO_DIR}/manifest.xml:True \
+                               ${REPO_DIR}/manifests/*:True"
+
 do_install_append() {
     # Navigate to the repo manifest directory
     MANIFEST_DIR="${TOPDIR}/../.repo/manifests"
