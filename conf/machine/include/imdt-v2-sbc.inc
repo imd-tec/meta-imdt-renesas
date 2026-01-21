@@ -17,6 +17,8 @@ KERNEL_DEVICETREE = " \
 	renesas/imdt-v2-sbc-dsi-hdmi.dtb \
 	renesas/imdt-v2-sbc-dsi-panel.dtb \
 	renesas/${MACHINE}.dtb \
+	renesas/imdt-v2-sbc-ar1335-csi2.dtb \
+	renesas/imdt-v2-sbc-ar1335-csi3.dtb \
 "
 IMAGE_INSTALL_remove = " optee-client"
 
