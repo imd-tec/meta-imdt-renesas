@@ -29,6 +29,11 @@ do_install_append() {
                 BSP_VERSION="NO_TAG"
             fi
         fi
+    else
+        # Use git describe
+        MANIFEST_NAME="kas"
+        BSP_VERSION=$(git -C ${TOPDIR} describe --tags --always 2>/dev/null || echo "NO_TAG")
+        echo "BSP Version from git: ${BSP_VERSION}"
     fi
 
     # Write the custom /etc/issue file with the manifest details
