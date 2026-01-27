@@ -1,7 +1,16 @@
 REPO_DIR = "${TOPDIR}/../.repo"
+GIT_TOPDIR = "${TOPDIR}/../.git"
 
-do_install[file-checksums] += "${REPO_DIR}/manifest.xml:True \
-                               ${REPO_DIR}/manifests/*:True"
+# Conditionally add file-checksums only if the directories exist
+do_install[file-checksums] += "\
+    ${@'%s/manifest.xml:True %s/manifests/*:True' \
+    % (d.getVar('REPO_DIR'), d.getVar('REPO_DIR')) \
+    if os.path.isdir(d.getVar('REPO_DIR')) else ''}"
+
+do_install[file-checksums] += "\
+    ${@'%s/HEAD:True %s/refs/heads:True %s/refs/tags:True' \
+    % (d.getVar('GIT_TOPDIR'), d.getVar('GIT_TOPDIR'), d.getVar('GIT_TOPDIR')) \
+    if os.path.isdir(d.getVar('GIT_TOPDIR')) else ''}"
 
 do_install_append() {
     # Navigate to the repo manifest directory
@@ -32,7 +41,7 @@ do_install_append() {
     else
         # Use git describe
         MANIFEST_NAME="kas"
-        BSP_VERSION=$(git -C ${TOPDIR} describe --tags --always 2>/dev/null || echo "NO_TAG")
+        BSP_VERSION=$(git -C ${GIT_TOPDIR} describe --tags --always 2>/dev/null || echo "NO_TAG")
         echo "BSP Version from git: ${BSP_VERSION}"
     fi
 
