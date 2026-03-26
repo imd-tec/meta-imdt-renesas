@@ -1,5 +1,5 @@
 [Match]
-Name=wlan0
+Name=uap0
 
 [Network]
 Address=172.16.10.100/24

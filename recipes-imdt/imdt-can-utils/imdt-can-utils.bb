@@ -20,8 +20,8 @@ do_install() {
     install -m 0744 ${WORKDIR}/stop-can.sh ${D}/opt/imdt/can
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     /opt/imdt/can/ \
 "
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"

@@ -1,135 +1,121 @@
 #!/bin/bash
 #===============================================================================
-#title           : v4l2-init.sh
-#description     : This script initialises a media device pipeline
-#     
-#usage           : bash v4l2-init.sh --device 0 --width 1920 --height 1080
+# title       : v4l2-init.sh
+# description : Initialises a media device pipeline for CRU capture
+# usage       : v4l2-init.sh --device 0 --width 1920 --height 1080
 #===============================================================================
 set -e
 
-# At the moment, we only support setting up pipelines for /dev/media0 and /dev/media1
-MAX_DEVICE_ID=1
-
-# Default values when the user provides no arguments or a partially populated argument list
 DEFAULT_DEVICE_ID=0
-DEFAULT_CAPTURE_WIDTH="1920"
-DEFAULT_CAPTURE_HEIGHT="1080"
+DEFAULT_CAPTURE_WIDTH=1920
+DEFAULT_CAPTURE_HEIGHT=1080
 
 SUPPORTED_CAPTURE_RESOLUTIONS=("1280x720" "1920x1080" "4096x3072")
 
-# Elements used to construct pipelines associated with each media device
-SENSOR_NAMES=("ap1302.0-003c" "ap1302.1-003d")
-MIPI_CSI_ELEMENT_NAMES=("rzg2l_csi2 16000400.csi20" "rzg2l_csi2 16010400.csi21")
-CRU_ELEMENT_NAMES=("CRU output" "CRU output")
+check_resolution() {
+    local target="${1}x${2}"
 
-
-function check_sensor_resolution() {
-    local target_resolution="${1}x${2}"
-    local matching_resolution=""
-
-    for supported_resolution in ${SUPPORTED_CAPTURE_RESOLUTIONS[@]}; do
-        if [[ "${target_resolution}" == "${supported_resolution}" ]]; then
-            matching_resolution="${supported_resolution}"
-        fi 
+    for res in "${SUPPORTED_CAPTURE_RESOLUTIONS[@]}"; do
+        [[ "$target" == "$res" ]] && return 0
     done
 
-    if [[ -z "${matching_resolution}" ]]; then
-        echo "ERROR: Selected resolution is not supported"
-        echo "Use the --help option to see what resolutions are available"
+    echo "ERROR: Resolution ${target} is not supported"
+    echo "Supported: ${SUPPORTED_CAPTURE_RESOLUTIONS[*]}"
+    exit 1
+}
+
+# Find a media entity by matching a pattern in its name.
+# Usage: find_entity /dev/mediaX "pattern"
+# Returns the full entity name or exits on failure.
+find_entity() {
+    local media_device=$1
+    local pattern=$2
+    local entity
+
+    entity=$(media-ctl -d "$media_device" -p | grep "^- entity" | grep "$pattern" | head -1 | sed 's/^- entity [0-9]*: \(.*\) ([0-9]* pad.*/\1/')
+
+    if [[ -z "$entity" ]]; then
+        echo "ERROR: No entity matching '${pattern}' found on ${media_device}" >&2
         exit 1
     fi
+
+    echo "$entity"
 }
 
-function check_sensor_exists() {
+# Discover the pipeline entities from the media device topology.
+# The CRU pipeline is: sensor (ap1302) -> CSI -> cru-ip -> CRU output
+discover_pipeline() {
     local media_device=$1
-    local sensor_name=$2
-    local sensor_dev_name=""
-    
-    # If the sensor exists it will return the /dev file
-    # If it doesn't exist, it returns "Entity '${sensor_name}' not found"
-    sensor_dev_name="$(media-ctl -d "${media_device}" -e "${sensor_name}")"
 
-    if [[ "${sensor_dev_name}" == "Entity '${sensor_name}' not found" ]]; then
-        echo "ERROR: Sensor (${sensor_name}) not found. Please make sure the sensor is connected to the board"
+    if [[ ! -e "$media_device" ]]; then
+        echo "ERROR: ${media_device} does not exist"
         exit 1
-    fi    
+    fi
+
+    SENSOR=$(find_entity "$media_device" "ap1302")
+    CSI=$(find_entity "$media_device" "csi-")
+    CRU_IP=$(find_entity "$media_device" "cru-ip")
+    VIDEO_DEVICE=$(media-ctl -d "$media_device" -e 'CRU output')
 }
 
-function create_pipeline() {
+create_pipeline() {
     local media_device_id=$1
-    local capture_width=$2
-    local capture_height=$3
-
+    local width=$2
+    local height=$3
     local media_device="/dev/media${media_device_id}"
 
-    if [[ "${media_device_id}" -gt "${MAX_DEVICE_ID}" ]]; then
-        echo "ERROR: A device ID bigger than ${MAX_DEVICE_ID} is not supported in this release"
-        exit 1
-    fi
-    if [[ "${media_device_id}" -lt "0" ]]; then
-        echo "ERROR: Invaid device ID"
-        exit 1
-    fi
-    
-    sensor_element=${SENSOR_NAMES["${media_device_id}"]}
-    mipi_csi_element=${MIPI_CSI_ELEMENT_NAMES["${media_device_id}"]}
-    cru_element=${CRU_ELEMENT_NAMES["${media_device_id}"]}
+    check_resolution "$width" "$height"
+    discover_pipeline "$media_device"
 
-    check_sensor_exists "${media_device}" "${sensor_element}"
-    check_sensor_resolution "${capture_width}" "${capture_height}"
+    local fmt="YUYV8_1X16/${width}x${height} field:none colorspace:srgb"
 
-    # Clear the media pipeline associated with a media device
-    media-ctl -d "${media_device}" -r
+    # Configure media bus format on each pad in the pipeline
+    media-ctl -d "$media_device" -V "'${SENSOR}':0 [fmt:${fmt}]"
+    media-ctl -d "$media_device" -V "'${CSI}':0 [fmt:${fmt}]"
+    media-ctl -d "$media_device" -V "'${CRU_IP}':0 [fmt:${fmt}]"
 
-    # Create links between device pads
-    media-ctl -d "${media_device}" -l "'${sensor_element}':0 -> '${mipi_csi_element}':0 [1]"
-    media-ctl -d "${media_device}" -l "'${mipi_csi_element}':1 -> '${cru_element}':0 [1]"
+    # Set the V4L2 capture format on the video device
+    v4l2-ctl -d "$VIDEO_DEVICE" --set-fmt-video=width=${width},height=${height},pixelformat=YUYV
 
-    # Configure pad resolution and image format
-    media-ctl -d "${media_device}" -V "'${sensor_element}':0 [fmt:YUYV8_1X16/${capture_width}x${capture_height} field:none colorspace:srgb]"
-    media-ctl -d "${media_device}" -V "'${mipi_csi_element}':0 [fmt:YUYV8_1X16/${capture_width}x${capture_height}  field:none colorspace:srgb]"
-
-    echo "Succesfully linked ${sensor_element} to ${mipi_csi_element} with format YUYV8_1X16 and resolution ${capture_width}x${capture_height}"
+    echo "Configured ${SENSOR} -> ${CSI} -> ${CRU_IP} -> ${VIDEO_DEVICE}"
+    echo "  Format: YUYV8_1X16 ${width}x${height}"
 }
 
-function print_usage() {
-cat << EOF
+print_usage() {
+    cat << EOF
 Usage: v4l2-init [options]
 
 Options:
-  --help                    show this help message and exit
-  --device DEVICE_ID        The id of the media device, where 0 corresponds to /dev/media0
-  --width WIDTH             Width of capture image
-  --height HEIGHT           Height of capture image 
+  --help                    Show this help message and exit
+  --device DEVICE_ID        Media device index (0 = /dev/media0, 1 = /dev/media1)
+  --width WIDTH             Capture width
+  --height HEIGHT           Capture height
 
-If no options are provided this script will configure /dev/media${DEFAULT_DEVICE_ID} to produce
-capture images that are ${DEFAULT_CAPTURE_WIDTH}x${DEFAULT_CAPTURE_HEIGHT}
+Defaults: /dev/media${DEFAULT_DEVICE_ID} at ${DEFAULT_CAPTURE_WIDTH}x${DEFAULT_CAPTURE_HEIGHT}
 
-Available Capture Resolutions (width x height):
-  ${SUPPORTED_CAPTURE_RESOLUTIONS[0]}
-  ${SUPPORTED_CAPTURE_RESOLUTIONS[1]}
-  ${SUPPORTED_CAPTURE_RESOLUTIONS[2]}
+Supported resolutions:
+  ${SUPPORTED_CAPTURE_RESOLUTIONS[*]}
 EOF
 }
 
-function parse_shell_args() {
-    local device_id=${DEFAULT_DEVICE_ID}
-    local capture_width=${DEFAULT_CAPTURE_WIDTH}
-    local capture_height=${DEFAULT_CAPTURE_HEIGHT}
+main() {
+    local device_id=$DEFAULT_DEVICE_ID
+    local width=$DEFAULT_CAPTURE_WIDTH
+    local height=$DEFAULT_CAPTURE_HEIGHT
 
-    while [[ "$#" -gt 0 ]]; do
+    while [[ $# -gt 0 ]]; do
         case "$1" in
-            --device)  device_id="$2";                  shift 2;;
-            --width)   capture_width="$2";              shift 2;;
-            --height)  capture_height="$2";             shift 2;;
-            --help)    print_usage;                     exit 0;;
-            *)         echo "ERROR: Unknown parameter passed: $1";
-                       print_usage; 
-                       exit 1;;
+            --device) device_id="$2"; shift 2 ;;
+            --width)  width="$2";     shift 2 ;;
+            --height) height="$2";    shift 2 ;;
+            --help)   print_usage;    exit 0  ;;
+            *)        echo "ERROR: Unknown option: $1"
+                      print_usage
+                      exit 1 ;;
         esac
     done
 
-    create_pipeline "${device_id}" "${capture_width}" "${capture_height}"
+    create_pipeline "$device_id" "$width" "$height"
 }
 
-parse_shell_args "$@"
+main "$@"

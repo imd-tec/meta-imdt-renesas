@@ -1,0 +1,27 @@
+From 51962ac4551c2120b7caea4ad4b8294e0f7dfe48 Mon Sep 17 00:00:00 2001
+From: Lewis Purvis <lewisp@imd-tec.com>
+Date: Thu, 19 Feb 2026 16:27:41 +0000
+Subject: [PATCH 1/4] add drp1 to v2n
+
+---
+ arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
+index 37b6f99d90e0..9e1dfe9e0828 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2n-sbc.dts
+@@ -92,3 +92,9 @@ &adc2 {
+ 	status = "okay";
+ };
+ 
++&drp1 {
++    memory-region = <&drp_codec>;
++    memory-oca-region = <&opencva_reserved>;
++    memory-shared-for-drpai-ext-cont = <&shared_drp_reserved>;
++    status = "okay";
++};
+\ No newline at end of file
+-- 
+2.39.2
+

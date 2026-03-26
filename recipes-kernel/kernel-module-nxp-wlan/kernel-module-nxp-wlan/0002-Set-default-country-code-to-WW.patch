@@ -1,0 +1,15 @@
+diff --git a/mlan/mlan_main.h b/mlan/mlan_main.h
+--- a/mlan/mlan_main.h
++++ b/mlan/mlan_main.h
+@@ -465,9 +465,9 @@
+ #define LOW_RX_PENDING 800
+
+ /** Default region code */
+-#define MRVDRV_DEFAULT_REGION_CODE 0x10
++#define MRVDRV_DEFAULT_REGION_CODE 0x00
+ /** Default country code */
+-#define MRVDRV_DEFAULT_COUNTRY_CODE "US"
++#define MRVDRV_DEFAULT_COUNTRY_CODE "WW"
+
+ /** Japan country code */
+ #define COUNTRY_CODE_JP_40 0x40

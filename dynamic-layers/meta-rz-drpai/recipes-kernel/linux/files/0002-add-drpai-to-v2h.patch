@@ -1,0 +1,28 @@
+From e3d9d8affa6fd975a5d2566bd5d86fcfe46a7933 Mon Sep 17 00:00:00 2001
+From: Lewis Purvis <lewisp@imd-tec.com>
+Date: Thu, 19 Feb 2026 16:32:41 +0000
+Subject: [PATCH 4/4] add drpai to v2h
+
+---
+ arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index e34938580e44..727dbd76fd80 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -108,6 +108,11 @@ vbus {
+ 	};
+ };
+ 
++&drpai0 {
++	memory-region = <&drp_reserved>;
++	status = "okay";
++};
++
+ &sci0 {
+ 	pinctrl-0 = <&sci0_pins>;
+ 	pinctrl-names = "default";
+-- 
+2.39.2
+

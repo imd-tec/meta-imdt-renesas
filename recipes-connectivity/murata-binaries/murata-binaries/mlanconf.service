@@ -1,11 +1,13 @@
 [Unit]
-Description=Pre-Device Tree Script for mlan
-Before=sysinit.target
-DefaultDependencies=no
+Description=NXP WLAN regulatory domain setup
+Wants=sys-subsystem-net-devices-wlan0.device
+After=sys-subsystem-net-devices-wlan0.device
+Before=network-pre.target hostapd.service wpa_supplicant-nl80211@wlan0.service
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/usr/sbin/switch_regions.sh
 
 [Install]
-WantedBy=sysinit.target
+WantedBy=multi-user.target

@@ -1,0 +1,34 @@
+From db2e9c785923a531478eeda76025f77e99c69061 Mon Sep 17 00:00:00 2001
+From: Lewis Purvis <lewisp@imd-tec.com>
+Date: Tue, 10 Feb 2026 17:24:33 +0000
+Subject: [PATCH] Set configs for Renesas board
+
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 30511d0..c4fa625 100644
+--- a/Makefile
++++ b/Makefile
+@@ -93,7 +93,7 @@ CONFIG_BIG_ENDIAN=n
+ 
+ 
+ # SDIO suspend/resume
+-CONFIG_SDIO_SUSPEND_RESUME=y
++CONFIG_SDIO_SUSPEND_RESUME=n
+ 
+ # DFS testing support
+ CONFIG_DFS_TESTING_SUPPORT=y
+@@ -155,7 +155,7 @@ ccflags-y += -DLINUX
+ 
+ 
+ ARCH ?= arm64
+-CONFIG_IMX_SUPPORT=y
++CONFIG_IMX_SUPPORT=n
+ ifeq ($(CONFIG_IMX_SUPPORT),y)
+ ccflags-y += -DIMX_SUPPORT
+ ifneq ($(ANDROID_PRODUCT_OUT),)
+-- 
+2.34.1
+

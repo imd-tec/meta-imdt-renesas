@@ -22,8 +22,8 @@ do_install() {
     install -m 0744 ${WORKDIR}/set-eth-mode.sh ${D}/opt/imdt/ethernet
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     /opt/imdt/ethernet/ \
 "
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"

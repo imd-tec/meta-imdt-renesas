@@ -3,8 +3,8 @@
 #: Author       : Lewis Purvis
 #: Description  : Echoes the Ethernet mode (DHCP-host, Client)
 
-FILE=/lib/systemd/network/19-eth${1}.network
-FILE2=/lib/systemd/network/19-eth${1}.network.disabled
+FILE=/lib/systemd/network/19-end${1}.network
+FILE2=/lib/systemd/network/19-end${1}.network.disabled
 if [ -f "$FILE" ]
 then
     echo "ADHOC"

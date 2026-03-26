@@ -1,0 +1,26 @@
+From 6d28f42e23239ddf609287c6903abf1e3cdfd913 Mon Sep 17 00:00:00 2001
+From: Lewis Purvis <lewisp@imd-tec.com>
+Date: Fri, 13 Mar 2026 13:19:32 +0000
+Subject: [PATCH] add drp1 node to v2h device tree
+
+---
+ arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index 8c8d5b7cc5f8..25dd38c7269e 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -168,3 +168,9 @@ &cru3 {
+ &adc {
+ 	status = "okay";
+ };
++
++&drp1 {
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
++	status = "okay";
++};
+-- 
+2.34.1
+

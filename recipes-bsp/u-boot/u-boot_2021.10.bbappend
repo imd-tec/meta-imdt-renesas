@@ -1,11 +1,13 @@
 SRC_URI = "git://git@github.com/imd-tec/renesas-u-boot-cip.git;protocol=ssh;branch=imdt-v2021.10-rzv2"
-SRCREV = "b3d5d2e334df842ad1f63b48f9993c801b8e28d5"
+SRCREV = "deb48481963cb9623af13f1f8f540fd1801d8a16"
 inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native 
 
 DEPENDS += "kern-tools-native u-boot-tools-native"
 
 UBOOT_ENV_SUFFIX = "img"
 UBOOT_ENV = "u-boot-env"
+LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
+COMPATIBLE_MACHINE:append = "|imdt-v2"
 
 # Default name of u-boot initial env, but enable individual recipes to change
 # this value.
@@ -108,16 +110,8 @@ do_compile () {
     fi
 }
 
-PACKAGE_BEFORE_PN += "${PN}-env"
-
-RPROVIDES_${PN}-env += "u-boot-default-env"
-ALLOW_EMPTY_${PN}-env = "1"
-FILES_${PN}-env = " \
-    ${@ '${sysconfdir}/${UBOOT_INITIAL_ENV}*' if d.getVar('UBOOT_INITIAL_ENV') else ''} \
-"
-
-#FILES_${PN} = "/boot ${sysconfdir} ${datadir}"
-RDEPENDS_${PN} = "${PN}-env"
+# ${PN}-env package, RPROVIDES, ALLOW_EMPTY, FILES, and RDEPENDS are already
+# defined in poky's u-boot.inc — no need to redefine them here.
 
 SYSROOT_DIRS_rzg2l = "/boot"
 
@@ -352,3 +346,4 @@ do_deploy () {
         ln -sf ${UBOOT_EXTLINUX_SYMLINK} ${DEPLOYDIR}/${UBOOT_EXTLINUX_CONF_NAME}
     fi
 }
+

@@ -21,8 +21,8 @@ do_install() {
     install -m 0744 ${WORKDIR}/audio-ctl.sh ${D}/opt/imdt/audio/
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     /opt/imdt/audio/ \
 "
 
-RDEPENDS_${PN} += "alsa-utils alsa-state bash"
+RDEPENDS:${PN} += "alsa-utils alsa-state bash"

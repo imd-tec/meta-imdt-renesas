@@ -1,7 +1,7 @@
 #!/bin/bash
-#: Title        : connect-to-access-point.sh
-#: Author       : Paul Thomson <pault@imd-tec.com>
-#: Description  : Configures and enables a connection to a WiFi access point
+#: Title       : connect-to-access-point.sh
+#: Author      : Paul Thomson <pault@imd-tec.com>
+#: Description : Configures and enables a connection to a WiFi access point
 
 function display_usage
 {
@@ -28,49 +28,46 @@ esac
 
 if [ $# == 2 ]
 then
-
     SSID=$1
     PASSPHRASE=$2
 
     SSID_LEN=${#SSID}
     PASSPHRASE_LEN=${#PASSPHRASE}
 
-    if [ $SSID_LEN -gt 32 ]
-    then
+    if [ $SSID_LEN -gt 32 ]; then
         echo "Error - SSID is too long"
         display_usage
     fi
 
-    if [ $PASSPHRASE_LEN -lt 8 ]
-    then
+    if [ $PASSPHRASE_LEN -lt 8 ]; then
         echo "Error - passphrase is too short"
         display_usage
     fi
 
-    if [ $PASSPHRASE_LEN -gt 63 ]
-    then
+    if [ $PASSPHRASE_LEN -gt 63 ]; then
         echo "Error - passphrase is too long"
         display_usage
     fi
 
-    TMP_FILE=`mktemp`
+    TMP_FILE=$(mktemp)
 
-    echo "ctrl_interface=/var/run/wpa_supplicant" > $TMP_FILE
-    echo "ctrl_interface_group=0" >> $TMP_FILE
-    echo "update_config=1" >> $TMP_FILE
-    echo "" >> $TMP_FILE
+    echo "ctrl_interface=/var/run/wpa_supplicant" > "$TMP_FILE"
+    echo "ctrl_interface_group=0" >> "$TMP_FILE"
+    echo "update_config=1" >> "$TMP_FILE"
+    echo "country=DE" >> "$TMP_FILE"
+    echo "" >> "$TMP_FILE"
 
-    wpa_passphrase "$SSID" "$PASSPHRASE" >> $TMP_FILE
+    wpa_passphrase "$SSID" "$PASSPHRASE" >> "$TMP_FILE"
 
-    if [ $? == 0 ]
-    then
-        cp $TMP_FILE /etc/wpa_supplicant/wpa_supplicant-nl80211-wlan0.conf
+    if [ $? == 0 ]; then
+        cp "$TMP_FILE" /etc/wpa_supplicant/wpa_supplicant-nl80211-wlan0.conf
     else
         echo "Failed to create wpa_supplicant configuration file ($?)"
+        rm "$TMP_FILE"
         display_usage
     fi
 
-    rm $TMP_FILE
+    rm "$TMP_FILE"
 
 fi
 
@@ -78,23 +75,19 @@ fi
 
 MODE=`/opt/imdt/wifi/get-wifi-mode.sh`
 
-if [ $MODE == "AP" ]
+if [ "$MODE" == "AP" ]
 then
 
     disable_access_point
 
-    enable_station_network_unit
-
     enable_station
 
-elif [ $MODE == "STA" ]
+elif [ "$MODE" == "STA" ]
 then
 
     restart_station
 
 else
-
-    enable_station_network_unit
 
     enable_station
 

@@ -1,12 +1,14 @@
-# From meta-rz-drpai/recipes-core/images/core-image-%.bbappend
-IMAGE_INSTALL_append = " \
-    kernel-module-udmabuf \
-    libjpeg-turbo-dev \
-    opencv \
-    opencv-dev \
+IMAGE_INSTALL:append = " \
+	rz-tvm-runtime \
+	kernel-module-mmngr \
+	python3-modules \
+	python3-pip \
+	python3-wheel \
+	python3-setuptools \
+	python3-numpy \
+	python3-pandas \
+	python3-pillow \
+	python3-opencv \
 "
 
-TOOLCHAIN_TARGET_TASK_append = " drpai "
-
-# From meta-imdt-renesas
-IMAGE_INSTALL_append = " app-yolov2-cam "
+TOOLCHAIN_TARGET_TASK:append = " drpai "

@@ -1,33 +1,42 @@
-require conf/machine/include/rzv2h-common.inc
-require conf/machine/include/cip-core.inc
-DEFAULTTUNE ?= "cortexa55"
+require conf/machine/include/arm/armv8-2a/tune-cortexa55.inc
+require conf/machine/include/rz-common.inc
 
-TUNE_CONF ?= "conf/machine/include/tune-cortexa55.inc"
-require ${TUNE_CONF}
+SERIAL_CONSOLES ?= "115200;ttySC0"
+PREFERRED_VERSION_trusted-firmware-a ?= "2.10%"
+TFA_BOARD ?= "evk_1"
+TFA_UBOOT ?= "1"
+TFA_BUILD_TARGET ?= "bl2 fip"
+BL2_BOOT_TARGET ?= "spi mmc esd"
+EXTRA_IMAGEDEPENDS += " firmware-pack"
 
-PREFERRED_PROVIDER_virtual/kernel="linux-renesas"
-PREFERRED_VERSION_swupdate = "2021.11"
-PREFERRED_VERSION_dhcpcd = "9.4.0"
+BL2_BASE_ADDR ?= "0x08103000"
+BL2_ADJUST_VMA ?= "0x08101E00"
+FIP_ADJUST_VMA ?= "0x0"
+
+# U-Boot Configuration
+PREFERRED_VERSION_u-boot = "2021.10%"
 
 # flash writer
 EXTRA_IMAGEDEPENDS += " flash-writer"
 
+# firmware pack
+EXTRA_IMAGEDEPENDS += " firmware-pack"
+
 # Add the HDMI and panel device tree files
 KERNEL_DEVICETREE = " \
-	renesas/imdt-v2-sbc-dsi-hdmi.dtb \
-	renesas/imdt-v2-sbc-dsi-panel.dtb \
+	renesas/imdt-v2-sbc-dsi-hdmi.dtbo \
+	renesas/imdt-v2-sbc-dsi-panel.dtbo \
 	renesas/${MACHINE}.dtb \
-	renesas/imdt-v2-sbc-ar1335-csi2.dtb \
-	renesas/imdt-v2-sbc-ar1335-csi3.dtb \
+	renesas/imdt-v2-sbc-ar1335-csi2.dtbo \
+	renesas/imdt-v2-sbc-ar1335-csi3.dtbo \
 "
-IMAGE_INSTALL_remove = " optee-client"
+IMAGE_INSTALL:remove = " optee-client"
 
 IMAGE_BOOT_FILES = " \
 	u-boot-env.img \
 "
-WIC_INPUT_DEPENDS = "firmware-pack:do_deploy flash-writer:do_deploy"
-
 KERNEL_DTC_FLAGS += " -@"
-# Use the imdt-image wic file for the V2H and V2N
-WKS_SUPPORT = "1"
-WKS_DEFAULT_FILE = "imdt-image.wks"
+
+# Wic image
+WKS_FILE = "imdt-image.wks"
+do_image_wic[depends] += "firmware-pack:do_deploy"

@@ -30,8 +30,8 @@ do_install() {
     install -m 0644 ${WORKDIR}/wifi-lib.sh ${D}/opt/imdt/wifi
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     /opt/imdt/wifi/ \
 "
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"

@@ -1,0 +1,28 @@
+software =
+{
+    version = "2.0.0";
+    hardware-compatibility: [ "1.0" ];
+
+    @FILES_BLOCK@
+
+    images:
+    (
+        {
+            filename = "@TARFILE@";
+            type = "archive";
+            compressed = "@COMPRESSION_TYPE@";
+            device = "/dev/update";
+            filesystem = "ext4";
+            path = "/";
+        }
+    );
+
+    scripts:
+    (
+        {
+            filename = "update.sh";
+            type = "shellscript";
+        }
+    );
+
+};

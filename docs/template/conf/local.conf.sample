@@ -161,7 +161,7 @@ USER_CLASSES ?= "buildstats image-mklibs image-prelink"
 # run tests against any SDK that are built. To enable this uncomment these lines.
 # See classes/test{image,sdk}.bbclass for further details.
 #IMAGE_CLASSES += "testimage testsdk"
-#TESTIMAGE_AUTO_qemuall = "1"
+#TESTIMAGE_AUTO:qemuall = "1"
 
 #
 # Interactive shell configuration
@@ -237,14 +237,14 @@ BB_DISKMON_DIRS ??= "\
 #
 # By default native qemu will build with a builtin VNC server where graphical output can be
 # seen. The line below enables the SDL UI frontend too.
-PACKAGECONFIG_append_pn-qemu-system-native = " sdl"
+PACKAGECONFIG:append:pn-qemu-system-native = " sdl"
 # By default libsdl2-native will be built, if you want to use your host's libSDL instead of
 # the minimal libsdl built by libsdl2-native then uncomment the ASSUME_PROVIDED line below.
 #ASSUME_PROVIDED += "libsdl2-native"
 
 # You can also enable the Gtk UI frontend, which takes somewhat longer to build, but adds
 # a handy set of menus for controlling the emulator.
-#PACKAGECONFIG_append_pn-qemu-system-native = " gtk+"
+#PACKAGECONFIG:append:pn-qemu-system-native = " gtk+"
 
 #
 # Hash Equivalence
@@ -266,20 +266,20 @@ PACKAGECONFIG_append_pn-qemu-system-native = " sdl"
 CONF_VERSION = "1"
 
 # Add systemd configuration
-DISTRO_FEATURES_append = " systemd"
+DISTRO_FEATURES:append = " systemd"
 VIRTUAL-RUNTIME_init_manager = "systemd"
 
 # add the static lib to SDK toolchain
-SDKIMAGE_FEATURES_append = " staticdev-pkgs dev-pkgs dbg-pkgs"
+SDKIMAGE_FEATURES:append = " staticdev-pkgs dev-pkgs dbg-pkgs"
 
 # Enable pam distro feature
-DISTRO_FEATURES_append = " pam"
+DISTRO_FEATURES:append = " pam"
 
 # Enable wayland and disable x11
-DISTRO_FEATURES_append = " wayland"
-DISTRO_FEATURES_remove = " x11"
-DISTRO_FEATURES_NATIVESDK_append = " wayland"
-DISTRO_FEATURES_NATIVESDK_remove = " x11"
+DISTRO_FEATURES:append = " wayland"
+DISTRO_FEATURES:remove = " x11"
+DISTRO_FEATURES_NATIVESDK:append = " wayland"
+DISTRO_FEATURES_NATIVESDK:remove = " x11"
 
 # Add qt5 demonstration to core-image-qt or not
 #QT_DEMO = "1"
@@ -302,11 +302,11 @@ LICENSE_FLAGS_WHITELIST = " \
 # Enable multilib to support 32-bits applications.
 require conf/multilib.conf
 MULTILIBS = "multilib:lib32"
-DEFAULTTUNE_virtclass-multilib-lib32 = "armv7vethf-neon-vfpv4"
+DEFAULTTUNE:virtclass-multilib-lib32 = "armv7vethf-neon-vfpv4"
 USE_32BIT_PKGS = "1"
 
 # For meta-virtualization layer
-DISTRO_FEATURES_append = "${@oe.utils.conditional('VIRTUALIZATION_CHECK', 'True', ' virtualization', '', d)}"
+DISTRO_FEATURES:append = "${@oe.utils.conditional('VIRTUALIZATION_CHECK', 'True', ' virtualization', '', d)}"
 
 # Generate compressed "git2_" gz of all git packages in DL_DIR
 #BB_GENERATE_MIRROR_TARBALLS = "1"
@@ -319,7 +319,7 @@ DISTRO_FEATURES_append = "${@oe.utils.conditional('VIRTUALIZATION_CHECK', 'True'
 #BB_GIT_SHALLOW_DEPTH = "1"
 
 # Remove dnf package which causes high CPU workload
-PACKAGE_INSTALL_remove = " dnf "
+PACKAGE_INSTALL:remove = " dnf "
 
 # Support WIC images with default wks from WKS_DEFAULT_FILE
 # Reupdate WKS_DEFAULT_FILE if want to support another wks file.

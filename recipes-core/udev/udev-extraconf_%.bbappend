@@ -2,14 +2,14 @@
 # Copyright (c) 2024 IMD Technologies
 #
 
-FILESEXTRAPATHS_append := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:append := "${THISDIR}/${PN}:"
 
-SRC_URI_append = " \
+SRC_URI:append = " \
     file://ap1302-sensor-rzv2h.conf \
     file://nxp_modules.conf \
 "
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${sysconfdir}/modprobe.d
 
     # Install modprobe config for AP1302
@@ -19,4 +19,4 @@ do_install_append() {
     install -m 0644 ${WORKDIR}/nxp_modules.conf ${D}${sysconfdir}/modprobe.d
 }
 
-FILES_${PN} += "${sysconfdir}/modprobe.d"
+FILES:${PN} += "${sysconfdir}/modprobe.d"
