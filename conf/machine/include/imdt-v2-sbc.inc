@@ -5,7 +5,7 @@ SERIAL_CONSOLES ?= "115200;ttySC0"
 PREFERRED_VERSION_trusted-firmware-a ?= "2.10%"
 TFA_BOARD ?= "evk_1"
 TFA_UBOOT ?= "1"
-TFA_BUILD_TARGET ?= "bl2 fip"
+TFA_BUILD_TARGET ?= "bl2 bl31 fip"
 BL2_BOOT_TARGET ?= "spi mmc esd"
 EXTRA_IMAGEDEPENDS += " firmware-pack"
 
