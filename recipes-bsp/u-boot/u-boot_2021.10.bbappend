@@ -9,6 +9,11 @@ UBOOT_ENV = "u-boot-env"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
 COMPATIBLE_MACHINE:append = "|imdt-v2"
 
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append = " \
+    file://overlays.cfg \
+"
+
 # Default name of u-boot initial env, but enable individual recipes to change
 # this value.
 UBOOT_INITIAL_ENV ?= "${PN}-initial-env"
