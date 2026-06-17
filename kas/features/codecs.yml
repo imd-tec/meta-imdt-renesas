@@ -1,0 +1,23 @@
+header:
+  version: 15
+
+repos:
+# To download the required Renesas proprietary codecs,
+# navigate to: www.renesas.com/en/software-tool/rzv2n-ai-software-development-kit#downloads
+# you should see a list of downloads for the RZ/V2N AI SDK this project relies on the on labelled:
+# "RZ/V2N AI SDK v5.00 Source Code"
+# There will be a link below it "Log in to Download"
+#  Please note that the file is ~16GB - The Renesas servers are very slow. 
+# this will likely take a very long time to download, but is required.
+#
+# After downloading and extracting the archive, navigate to the following path within it:
+# rzv2n_ai-sdk_yocto_recipe_v5.00.tar.gz
+# Within this archive, locate the folder:
+# meta-rz-features/meta-rz-codecs
+# 
+# NOTE: you will also see the meta-rz-graphics layer in this directory. if you require it, please copy this as well
+# Copy this folder to the following path within your imdt-renesas-kas repository:
+# <kas-base-dir>/sources/meta-rz-features/
+# 
+  meta-rz-features-codecs:
+    path: sources/meta-rz-features/meta-rz-codecs

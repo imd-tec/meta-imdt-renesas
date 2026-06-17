@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+# Copyright IMDT 2026
+header:
+  version: 14
+  includes:
+    - kas/includes/base.yml
+    - kas/includes/imdt.yml
+    - kas/machine/v2h.yml
+    - kas/images/core.yml 
