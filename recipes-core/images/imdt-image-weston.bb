@@ -1,4 +1,4 @@
-require recipes-core/images/imdt-image-core.bb
+require recipes-core/images/imdt-image-base.bb
 
 REQUIRED_DISTRO_FEATURES = "wayland"
 

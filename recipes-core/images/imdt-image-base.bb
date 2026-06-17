@@ -1,8 +1,8 @@
-DESCRIPTION = "IMDT core image for Renesas RZ platforms."
+DESCRIPTION = "IMDT base image for Renesas RZ platforms."
 
 python () {
     if bb.utils.contains('DISTRO_FEATURES', 'imdt-isp', True, False, d):
-        bb.warn("imdt-image-core is being built with 'imdt-isp' in DISTRO_FEATURES. " \
+        bb.warn("imdt-image-base is being built with 'imdt-isp' in DISTRO_FEATURES. " \
                 "The kernel will include ISP modules. Use imdt-image-isp instead.")
 }
 

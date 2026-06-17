@@ -1,4 +1,4 @@
 header: 
   version: 15
 
-target: imdt-image-core
+target: imdt-image-base

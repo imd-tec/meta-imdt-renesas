@@ -1,0 +1,22 @@
+name: Build IMDT Base Image
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
+    with:
+      kas-config: 'kas/default.yml'
+      machine: 'imdt-v2h-sbc'
+      artifact-name: 'imdt-image-base'
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
