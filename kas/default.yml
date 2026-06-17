@@ -6,4 +6,4 @@ header:
     - kas/includes/base.yml
     - kas/includes/imdt.yml
     - kas/machine/v2h.yml
-    - kas/images/core.yml 
+    - kas/images/base.yml 
