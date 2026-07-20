@@ -1,0 +1,56 @@
+#!/bin/sh
+
+set -e
+
+# Wait for configfs gadget and a UDC to appear, replacing the original fixed sleep 10.
+n=0
+while true; do
+    udcname="${UDC_NAME:-$(ls -1 /sys/class/udc 2>/dev/null | head -n 1)}"
+
+    if [ $n -eq 30 ]; then
+        echo "Timeout waiting for UDC"
+        exit 1
+    fi
+
+    if [ ! -e /sys/kernel/config/usb_gadget/adb/UDC ]; then
+        echo "Waiting for configfs usb_gadget to be initialized... ($n/30)"
+        sleep 1
+        n=$((n + 1))
+        continue
+    fi
+
+    if [ -z "$udcname" ]; then
+        echo "Waiting for UDC to appear... ($n/30)"
+        sleep 1
+        n=$((n + 1))
+        continue
+    fi
+
+    break
+done
+
+# Wait for adbd to write USB descriptors to FunctionFS. The kernel creates ep1
+# only after adbd has written its complete descriptor set to ep0 (FFS_ACTIVE).
+# Binding the UDC before this causes -ENODEV and an unrecoverable ep0 race.
+m=0
+while [ ! -e /dev/usb-ffs/adb/ep1 ]; do
+    m=$((m + 1))
+    if [ $m -ge 50 ]; then
+        echo "Timeout waiting for adbd to write USB descriptors to FunctionFS" >&2
+        break
+    fi
+    sleep 0.1
+done
+
+# Bind gadget to UDC with retry — adbd may still be writing descriptors.
+n=0
+while ! echo -n "$udcname" > /sys/kernel/config/usb_gadget/adb/UDC 2>/dev/null; do
+    n=$((n + 1))
+    if [ "$n" -ge 30 ]; then
+        echo "Error: timed out binding UDC $udcname after ${n} attempts" >&2
+        exit 1
+    fi
+    sleep 1
+done
+
+echo "Setting UDC $udcname for USB ADB Gadget usage"

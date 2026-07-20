@@ -8,9 +8,13 @@ python () {
 
 IMAGE_FEATURES += "splash package-management ssh-server-dropbear hwcodecs"
 
-# Enable ADB over USB. USB_DEBUGGING_ENABLED triggers android_tools_enable_devmode
-# which creates /etc/usb-debugging-enabled, required by the adbd service condition.
-USB_DEBUGGING_ENABLED = "1"
+# Create the marker file that android-tools-adbd.service requires before starting.
+# USB_DEBUGGING_ENABLED is evaluated at android-tools recipe parse time (wrong context),
+# so we create the file directly here instead.
+enable_adb_debugging() {
+    touch ${IMAGE_ROOTFS}/etc/usb-debugging-enabled
+}
+ROOTFS_POSTPROCESS_COMMAND += "enable_adb_debugging;"
 
 LICENSE = "MIT"
 
@@ -44,7 +48,6 @@ IMAGE_INSTALL:append = " \
     swupdate-www \
     u-boot-fw-utils \
     android-tools-adbd \
-    android-tools-conf-configfs \
     usbutils \
     util-linux \
     wireless-regdb-static \
