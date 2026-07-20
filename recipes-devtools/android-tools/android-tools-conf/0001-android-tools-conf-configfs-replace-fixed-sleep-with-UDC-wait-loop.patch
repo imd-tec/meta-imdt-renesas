@@ -1,0 +1,70 @@
+From: William Bright <william.bright@imd-tec.com>
+Subject: [PATCH] android-tools-conf-configfs: replace fixed sleep with UDC wait loop
+
+The android-gadget-start script previously relied on a fixed `sleep 10`
+delay for configuring the USB gadget UDC. This approach can either delay
+boot unnecessarily or still race with UDC or configfs initialization on
+slower systems.
+
+Replace the fixed sleep with a limited time polling loop that waits for
+both configfs and a valid UDC before configuring the USB ADB gadget.
+
+This makes USB gadget initialization more deterministic across platforms
+without relying on arbitrary delays.
+
+This patch has been ported from the OE mailing list and modified by William Bright to work with
+this version of the script.
+
+Upstream-Status: Submitted [https://patchwork.yoctoproject.org/project/oe/patch/20260416072305.1447652-1-viswanath.kraleti@oss.qualcomm.com/]
+
+Signed-off-by: William Bright <william.bright@imd-tec.com>
+Co-Developed-by: Viswanath Kraleti <viswanath.kraleti@oss.qualcomm.com>
+---
+ android-gadget-start | 39 ++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/android-gadget-start b/android-gadget-start
+index 1234567..abcdefg 100755
+--- a/android-gadget-start
++++ b/android-gadget-start
+@@ -2,7 +2,39 @@
+ 
+ set -e
+ 
+-sleep 10
++n=0
++while true; do
++    # Pick first available UDC as default. Set UDC_NAME in env to override.
++    udcname="${UDC_NAME:-$(ls -1 /sys/class/udc 2>/dev/null | head -n 1)}"
++
++    if [ $n -eq 30 ]; then
++        echo "Timeout waiting for UDC configuration"
++        exit 1
++    fi
++
++    if [ ! -e /sys/kernel/config/usb_gadget/adb/UDC ]; then
++        echo "Waiting for configfs usb_gadget to be initialized... ($n/30)"
++        sleep 1
++        n=$((n + 1))
++        continue
++    fi
++    configfs_udc="$(cat /sys/kernel/config/usb_gadget/adb/UDC 2>/dev/null || true)"
++
++    if [ -n "$udcname" ] && [ "$configfs_udc" = "$udcname" ]; then
++        echo "UDC $udcname successfully configured for USB ADB Gadget"
++        break
++    fi
++
++    if [ -z "$udcname" ]; then
++        echo "Waiting for UDC to appear... ($n/30)"
++    else
++        break
++    fi
++
++    sleep 1
++    n=$((n + 1))
++done
++ 
+ 
+ # Speed-only selection:
+ # 1) Pick UDC with highest maximum_speed

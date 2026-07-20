@@ -1,0 +1,70 @@
+From: William Bright <william.bright@imd-tec.com>
+Subject: [PATCH] android-gadget-start: wait for FunctionFS ep1 before binding UDC
+
+android-gadget-start runs as ExecStartPost of android-tools-adbd.service
+(Type=simple), so it races against adbd which starts writing USB
+descriptors to the FunctionFS control endpoint (ep0) at the same time.
+
+The kernel only creates ep1 (and ep2) inside /dev/usb-ffs/adb/ after adbd
+has successfully written its complete descriptor set to ep0 and the FFS
+state machine transitions to FFS_ACTIVE.  Binding the UDC before FFS is
+in FFS_ACTIVE causes ffs_func_bind() to return -ENODEV:
+
+    udc a600000.usb: failed to start adb: -19
+    UDC core: adb: couldn't find an available UDC or it's busy
+
+The retry loop added by the preceding patch recovers from this on the next
+attempt (~1 s later), but a second problem then appears: the USB host on
+the other end (the PC running adb) enumerates the device within ~100 ms
+of the gadget bind, before the DWC3 ep0 state machine has finished its
+post-bind initialisation.  The host's first SETUP packet hits ep0out while
+it cannot accept requests:
+
+    dwc3-qcom a600000.usb: request <ptr> was not queued to ep0out
+
+adbd detects the broken ep0 and enters a "read descriptors / read strings"
+retry loop at 1 s intervals that never recovers, because the ep0 error
+leaves the DWC3 gadget in a state where subsequent bind attempts succeed
+from the shell's perspective but the USB link is immediately broken again.
+
+Fix: poll for /dev/usb-ffs/adb/ep1 before writing the UDC name.  Once ep1
+exists adbd has fully written its descriptors, FFS is FFS_ACTIVE, and the
+bind will succeed cleanly on the first attempt without triggering the ep0
+race.  Allow up to 5 s (50 x 100 ms) and then fall through so the
+existing UDC bind retry loop handles any residual edge cases.
+
+Tested on IMDT QCS8550 SBC (dwc3-qcom, UDC a600000.usb): 20/20 boots
+pass after this patch (was ~5-7/10 before).
+
+Upstream-Status: Pending
+
+Signed-off-by: William Bright <william.bright@imd-tec.com>
+---
+ android-gadget-start | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+--- a/android-gadget-start
++++ b/android-gadget-start
+@@ -103,6 +103,22 @@ if [ -z "$best_udc" ]; then
+     return 1
+ fi
+
++# Wait for adbd to write USB descriptors to FunctionFS.  The kernel creates
++# ep1 (and ep2) inside /dev/usb-ffs/adb/ only after the descriptors have been
++# written to ep0, so ep1's existence is the reliable signal that adbd is ready
++# for the gadget to be bound to the UDC.  Binding before this causes the UDC
++# to return -ENODEV and, on a subsequent retry, an ep0out race that puts adbd
++# into a broken retry loop.
++m=0
++while [ ! -e /dev/usb-ffs/adb/ep1 ]; do
++    m=$((m + 1))
++    if [ $m -ge 50 ]; then
++        echo "Timeout waiting for adbd to write USB descriptors to FunctionFS" >&2
++        break
++    fi
++    sleep 0.1
++done
++
+ echo "Binding Gadget to UDC: $best_udc (maximum_speed='$(read_max_speed "$UDC_FOLDER/$best_udc")')" >&2
+ n=0
+ while ! echo -n "$best_udc" > "$GADGET_PATH/UDC" 2>/dev/null; do

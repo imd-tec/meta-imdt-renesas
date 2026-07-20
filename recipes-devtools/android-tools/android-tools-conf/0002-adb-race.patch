@@ -1,0 +1,47 @@
+From: William Bright <william.bright@imd-tec.com>
+Subject: [PATCH] android-gadget-start: retry UDC bind until FunctionFS is ready
+
+adbd (started as the unit's ExecStart) must open the FunctionFS control
+endpoint and write its descriptors/strings before the composite gadget
+can be bound to the UDC. android-gadget-start runs as ExecStartPost and
+races adbd: if it writes the UDC name before adbd has populated the
+FunctionFS descriptors (ep1/ep2), the kernel rejects the bind with
+-ENODEV:
+
+    udc a600000.usb: failed to start adb: -19
+    UDC core: adb: couldn't find an available UDC or it's busy
+
+Because the script runs under 'set -e', that single failed write aborts
+the script, fails the unit, and android-tools-adbd.service ends up in a
+restart loop ("Start request repeated too quickly").
+
+Retry the UDC write until it succeeds (up to ~30s) instead of giving up
+on the first attempt. Once adbd has written its descriptors the bind
+succeeds and the gadget enumerates normally.
+
+Observed on IMDT QCS8550 SBC (dwc3-qcom, UDC a600000.usb).
+
+Upstream-Status: Pending
+
+Signed-off-by: William Bright <william.bright@imd-tec.com>
+---
+ android-gadget-start | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/android-gadget-start
++++ b/android-gadget-start
+@@ -104,4 +104,13 @@
+ fi
+
+ echo "Binding Gadget to UDC: $best_udc (maximum_speed='$(read_max_speed "$UDC_FOLDER/$best_udc")')" >&2
+-echo -n "$best_udc" > "$GADGET_PATH/UDC"
++n=0
++while ! echo -n "$best_udc" > "$GADGET_PATH/UDC" 2>/dev/null; do
++    n=$((n + 1))
++    if [ "$n" -ge 30 ]; then
++        echo "Error: timed out binding UDC $best_udc after ${n} attempts" >&2
++        exit 1
++    fi
++    sleep 1
++done
++echo "Bound UDC $best_udc after $n attempt(s)" >&2
