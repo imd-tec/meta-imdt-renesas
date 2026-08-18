@@ -4,6 +4,7 @@ KERNEL_URL = "git://github.com/imd-tec/renesas-rz-linux-cip.git"
 KERNEL_PROTOCOL = "https"
 KERNEL_BRANCH = "rzv2-6.1.y"
 KERNEL_REV = "7a74ae54e42574960e80a9a9b803402205059ebe"
+PV = "6.1.141"
 
 BB_DONT_CACHE = "1"
 

@@ -1,0 +1,35 @@
+From: William Bright <William.Bright@imd-tec.com>
+Date: Tue, 18 Aug 2026 10:00:00 +0100
+Subject: [PATCH] ckwart: use ANSI prototype for main()
+
+The return-type selection above main() is dead code on a plain
+GNU/Linux build: the STRATUS/__GNUC__ branch that would emit "int" is
+nested inside "#ifndef STRATUS", so it can never fire, and no type
+token ends up before main() at all. Combined with the old K&R-style
+parameter declaration, this leaves main() with an implicit int return
+type, which GCC 14 rejects as a hard error (-Wimplicit-int) instead of
+a warning, breaking the native build of the wart helper binary.
+
+Give main() an explicit ANSI prototype instead of relying on that
+dead macro chain.
+
+Upstream-Status: Pending
+
+Signed-off-by: William Bright <William.Bright@imd-tec.com>
+---
+ ckwart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ckwart.c b/ckwart.c
+index a5640e5..a4e322d 100644
+--- a/ckwart.c
++++ b/ckwart.c
+@@ -528,7 +528,7 @@
+ #endif /* CK_SCOV5 */
+ #endif /* MAINTYPE */
+ #endif /* STRATUS */
+-main(argc,argv) int argc; char **argv; {
++int main(int argc, char **argv) {
+     trans head;
+     int state,c;
+     FILE *infile,*outfile;

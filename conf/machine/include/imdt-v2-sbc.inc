@@ -14,7 +14,11 @@ BL2_ADJUST_VMA ?= "0x08101E00"
 FIP_ADJUST_VMA ?= "0x0"
 
 # U-Boot Configuration
-PREFERRED_VERSION_u-boot = "2021.10%"
+PREFERRED_VERSION_u-boot = "2024.07%"
+
+PREFERRED_PROVIDER_virtual/kernel = "linux-renesas"
+PREFERRED_VERSION_linux-renesas ?= "6.1%"
+# Kernel Configuration
 
 # flash writer
 EXTRA_IMAGEDEPENDS += " flash-writer"
@@ -40,3 +44,5 @@ KERNEL_DTC_FLAGS += " -@"
 # Wic image
 WKS_FILE = "imdt-image.wks"
 do_image_wic[depends] += "firmware-pack:do_deploy"
+# 4K alignment for fastboot support
+IMAGE_ROOTFS_ALIGNMENT ?= "4"

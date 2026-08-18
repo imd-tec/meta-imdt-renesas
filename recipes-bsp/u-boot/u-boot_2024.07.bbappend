@@ -1,12 +1,11 @@
-SRC_URI = "git://git@github.com/imd-tec/renesas-u-boot-cip.git;protocol=ssh;branch=imdt-v2021.10-rzv2"
-SRCREV = "deb48481963cb9623af13f1f8f540fd1801d8a16"
-inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native 
+SRC_URI = "git://github.com/imd-tec/renesas-u-boot-cip.git;protocol=https;branch=imdt-v2024.07"
+SRCREV = "e1add1386c451c760548c144681ce99af667ea62"
+inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native
 
 DEPENDS += "kern-tools-native u-boot-tools-native"
 
 UBOOT_ENV_SUFFIX = "img"
 UBOOT_ENV = "u-boot-env"
-LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
 COMPATIBLE_MACHINE:append = "|imdt-v2"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
