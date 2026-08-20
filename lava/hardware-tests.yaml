@@ -157,6 +157,41 @@ actions:
           - 'c audio-codec "aplay -l | grep -q tlv320aic3x"'
           - 'c audio-pcm-node "test -c /dev/snd/pcmC0D0p"'
 
+    # Cases transcribed from "Renesas BSP Test Plan - working.md"; names are the
+    # plan's own test IDs. Tests needing a peer, a display, a camera or a cable
+    # change are not here.
+    - from: inline
+      name: renesas-bsp-test-plan
+      path: inline/renesas-bsp-test-plan.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: renesas-bsp-test-plan
+          description: Cases from the Renesas BSP Test Plan that run unattended over ssh
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          # SEN-MAG-1 / SEN-MAG-2 - magnetometer sysfs and readings
+          - 'c sen-mag-1-sysfs "test $(ls /sys/bus/iio/devices/iio:device1/ | grep -c magn) -ge 5"'
+          - 'c sen-mag-2-values "for a in x y z; do cat /sys/bus/iio/devices/iio:device1/in_magn_\${a}_raw || exit 1; done"'
+          # SEN-HUM-1 - SHT4x humidity and temperature
+          - 'c sen-hum-1-humidity "test $(cat /sys/class/hwmon/hwmon*/humidity*) -gt 0"'
+          - 'c sen-hum-1-temperature "test $(cat /sys/class/hwmon/hwmon*/temp*_input | wc -l) -ge 3"'
+          # SEN-THER-1 - both core thermal zones
+          - 'c sen-ther-1-zone0 "t=$(cat /sys/class/thermal/thermal_zone0/temp); test \$t -gt 20000 -a \$t -lt 110000"'
+          - 'c sen-ther-1-zone1 "t=$(cat /sys/class/thermal/thermal_zone1/temp); test \$t -gt 20000 -a \$t -lt 110000"'
+          # PCI-2 - PCIe link from the kernel log
+          - 'c pci-2-link-up "dmesg | grep -q PCIe.x4:.link.up"'
+          - 'c pci-2-lanes "dmesg | grep -q Configuring.PCIe.with.4.lane"'
+          # SWUEMMC-1 - active rootfs partition is reported
+          - 'c swuemmc-1-partitions "grep -q root= /proc/cmdline"'
+          # WCS-AP-1 - default access point configuration
+          - 'c wcs-ap-1-ssid "grep -q ^ssid=imdt-v2h-sbc-ap /etc/hostapd.conf"'
+          - 'c wcs-ap-1-wpa-psk "grep -q ^wpa_psk=d75f2c4babacce8f51eee22b5945d4754a95ebf970b8d5bf6eadf10cb9681e37 /etc/hostapd.conf"'
+          # CAN-1 - the plan's script brings can0 up; put it back afterwards
+          - 'c can-1-bring-up "/opt/imdt/can/start-can.sh && ip -br link show can0 | grep -q UP"'
+          - 'ip link set down can0 || true'
+
     - from: inline
       name: kernel-health
       path: inline/kernel-health.yaml
