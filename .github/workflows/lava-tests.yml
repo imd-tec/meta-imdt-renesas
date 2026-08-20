@@ -119,25 +119,54 @@ jobs:
       - name: Wait for fastboot deploy job
         run: bash lava/wait-job.sh "$DEPLOY_JOB_ID"
 
+      # Runs after the deploy, so it exercises the rootfs just written.
+      - name: Submit hardware tests job
+        run: |
+          sed -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
+              lava/hardware-tests.yaml > /tmp/lava-hardware-tests.yaml
+          JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-hardware-tests.yaml)
+          echo "hardware-tests: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
+          echo "HARDWARE_JOB_ID=$JOB_ID" >> "$GITHUB_ENV"
+
+      - name: Wait for hardware tests job
+        run: bash lava/wait-job.sh "$HARDWARE_JOB_ID"
+
       - name: Show LAVA job results
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
-          lavacli --identity lava-ci jobs show "$DEPLOY_JOB_ID" || true
-          lavacli --identity lava-ci results "$DEPLOY_JOB_ID" || true
+          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+            [ -z "$JOB_ID" ] && continue
+            echo "=== Job $JOB_ID ==="
+            lavacli --identity lava-ci jobs show "$JOB_ID" || true
+            lavacli --identity lava-ci results "$JOB_ID" || true
+          done
 
-      - name: Fetch LAVA results CSV
+      - name: Fetch LAVA results CSVs
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
-          curl -fsSL -H "Authorization: Token $LAVA_TOKEN" \
-            "http://${{ vars.LAVA_HOST }}/results/${DEPLOY_JOB_ID}/csv" \
-            -o lava-all-results.csv || true
+          HEADER=0
+          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+            [ -z "$JOB_ID" ] && continue
+            curl -fsSL -H "Authorization: Token $LAVA_TOKEN" \
+              "http://${{ vars.LAVA_HOST }}/results/${JOB_ID}/csv" \
+              -o "/tmp/lava-${JOB_ID}.csv" || continue
+            if [ "$HEADER" = 0 ]; then
+              cat "/tmp/lava-${JOB_ID}.csv" > lava-all-results.csv; HEADER=1
+            else
+              tail -n +2 "/tmp/lava-${JOB_ID}.csv" >> lava-all-results.csv
+            fi
+          done
 
       - name: Fetch LAVA logs
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
           mkdir -p lava-logs
-          lavacli --identity lava-ci jobs logs "$DEPLOY_JOB_ID" \
-            > "lava-logs/fastboot-deploy-${DEPLOY_JOB_ID}.log" 2>&1 || true
+          for NAME_JOB in "fastboot-deploy:$DEPLOY_JOB_ID" "hardware-tests:$HARDWARE_JOB_ID"; do
+            NAME="${NAME_JOB%%:*}"; JOB_ID="${NAME_JOB##*:}"
+            [ -z "$JOB_ID" ] && continue
+            lavacli --identity lava-ci jobs logs "$JOB_ID" \
+              > "lava-logs/${NAME}-${JOB_ID}.log" 2>&1 || true
+          done
           cp lava-all-results.csv lava-logs/ 2>/dev/null || true
 
       - name: Upload LAVA logs artifact
@@ -152,7 +181,8 @@ jobs:
       - name: Convert LAVA results to JUnit XML
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
-          python3 lava/lava_to_junit.py lava-all-results.csv lava-results.xml "$DEPLOY_JOB_ID"
+          python3 lava/lava_to_junit.py lava-all-results.csv lava-results.xml \
+            "$DEPLOY_JOB_ID $HARDWARE_JOB_ID"
 
       - name: Publish test results
         if: always() && env.DEPLOY_JOB_ID != ''
@@ -173,7 +203,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const jobId = process.env.DEPLOY_JOB_ID;
+            const jobIds = [process.env.DEPLOY_JOB_ID, process.env.HARDWARE_JOB_ID].filter(Boolean);
             let rows = [];
             try {
               const csv = fs.readFileSync('lava-all-results.csv', 'utf8').trim().split('\n');
@@ -189,7 +219,7 @@ jobs:
             const lines = [
               `## ${icon} LAVA fastboot deploy — \`${process.env.IMAGE_NAME}\` on \`${process.env.MACHINE}\``,
               '',
-              `[job #${jobId}](http://${process.env.LAVA_HOST}/scheduler/job/${jobId})`,
+              jobIds.map(id => `[job #${id}](http://${process.env.LAVA_HOST}/scheduler/job/${id})`).join(' · '),
               '',
               `**${passed} passed** · **${failed} failed**`,
               '',
@@ -205,13 +235,18 @@ jobs:
               body: lines.join('\n'),
             });
 
-      - name: Fail if the LAVA job did not complete or had test failures
+      - name: Fail if a LAVA job did not complete or had test failures
         if: env.DEPLOY_JOB_ID != ''
         run: |
-          HEALTH=$(lavacli --identity lava-ci jobs show "$DEPLOY_JOB_ID" | grep '^Health' | awk '{print $NF}')
-          echo "Job $DEPLOY_JOB_ID health: $HEALTH"
-          [ "$HEALTH" = "Complete" ] || { echo "LAVA job did not complete"; exit 1; }
-          python3 lava/check_results.py < lava-all-results.csv
+          FAILED=0
+          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+            [ -z "$JOB_ID" ] && { FAILED=1; continue; }
+            HEALTH=$(lavacli --identity lava-ci jobs show "$JOB_ID" | grep '^Health' | awk '{print $NF}')
+            echo "Job $JOB_ID health: $HEALTH"
+            [ "$HEALTH" = "Complete" ] || FAILED=1
+          done
+          python3 lava/check_results.py < lava-all-results.csv || FAILED=1
+          [ "$FAILED" = 0 ] || { echo "A LAVA job did not complete or had test failures"; exit 1; }
 
       - name: Cleanup
         if: always()

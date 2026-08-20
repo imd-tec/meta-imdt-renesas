@@ -1,0 +1,173 @@
+# Hardware and driver tests over ssh, run against whatever is deployed.
+# Reached through the worker's adb port-forward; see the v2h-sbc-01-ssh device.
+device_type: ssh
+job_name: Hardware and driver tests on imdt-v2h-sbc
+tags:
+- v2h-sbc
+
+timeouts:
+  job:
+    minutes: 20
+  action:
+    minutes: 10
+  connection:
+    minutes: 5
+priority: medium
+visibility: public
+
+metadata:
+  machine: imdt-v2h-sbc
+
+actions:
+- deploy:
+    to: ssh
+    os: oe
+    timeout:
+      minutes: 5
+
+- boot:
+    method: ssh
+    prompts:
+    - 'root@'
+    timeout:
+      minutes: 5
+
+- test:
+    timeout:
+      minutes: 10
+    definitions:
+
+    - from: inline
+      name: soc
+      path: inline/soc.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: soc
+          description: RZ/V2H SoC, memory, clocks and thermal
+        run:
+          steps:
+          # c NAME CMD - record a test case from CMD's exit status
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c cpu-cores "test $(nproc) -eq 4"'
+          - 'c soc-model "tr -d \\000 < /sys/firmware/devicetree/base/model | grep -q V2H"'
+          - 'c cip-kernel "uname -r | grep -q cip"'
+          - 'c memory-size "test $(awk /MemTotal/{print\$2} /proc/meminfo) -gt 15000000"'
+          - 'c cpufreq-driver "test $(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq) -gt 0"'
+          - 'c cpufreq-governor "test -r /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"'
+          - 'c thermal-zones "test $(ls -d /sys/class/thermal/thermal_zone* | wc -l) -ge 2"'
+          - 'c thermal-reading "t=$(cat /sys/class/thermal/thermal_zone0/temp); test \$t -gt 20000 -a \$t -lt 110000"'
+
+    - from: inline
+      name: storage
+      path: inline/storage.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: storage
+          description: eMMC, SD card and QSPI flash
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c emmc-present "test -b /dev/mmcblk0 -a -b /dev/mmcblk0boot0"'
+          - 'c emmc-read "dd if=/dev/mmcblk0 of=/dev/null bs=1M count=8"'
+          - 'c sdcard-present "test -b /dev/mmcblk1"'
+          - 'c sdcard-read "dd if=/dev/mmcblk1 of=/dev/null bs=1M count=8"'
+          - 'c qspi-flash "grep -q spi0.0 /proc/mtd"'
+          - 'c qspi-size-16m "grep -q 01000000 /proc/mtd"'
+
+    - from: inline
+      name: network
+      path: inline/network.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: network
+          description: Gigabit Ethernet, CAN and Wi-Fi drivers
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c eth-driver-bound "basename $(readlink /sys/class/net/end0/device/driver) | grep -qw renesas-gbeth"'
+          - 'c eth-carrier "test $(cat /sys/class/net/end0/carrier) -eq 1"'
+          - 'c eth-link-1g "test $(cat /sys/class/net/end0/speed) -eq 1000"'
+          - 'c eth-ping-gateway "ping -c2 -W2 $(ip route | awk /^default/{print\$3})"'
+          - 'c eth-second-port "test -d /sys/class/net/end1"'
+          - 'c can-interface "test -d /sys/class/net/can0"'
+          - 'c can-clock "ip -d link show can0 | grep -q 80000000"'
+          - 'c wifi-interface "test -d /sys/class/net/wlan0"'
+          - 'c wifi-driver "lsmod | grep -q ^moal && lsmod | grep -q ^mlan"'
+          - 'c wifi-phy "iw dev | grep -q phy#0"'
+
+    - from: inline
+      name: io
+      path: inline/io.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: io
+          description: I2C, GPIO, RTC, watchdog, USB and PCIe
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c i2c-buses "test $(ls /dev/i2c-* | wc -l) -ge 7"'
+          - 'c gpio-soc-pinctrl "gpiodetect | grep -q pinctrl"'
+          - 'c gpio-expanders "test $(gpiodetect | wc -l) -ge 3"'
+          - 'c rtc-device "test -c /dev/rtc0"'
+          - 'c rtc-read "hwclock -r"'
+          - 'c watchdog-device "test -c /dev/watchdog0"'
+          - 'c usb-controllers "test $(ls -d /sys/bus/usb/devices/usb* | wc -l) -ge 6"'
+          - 'c usb-gadget-udc "test -n $(ls /sys/class/udc)"'
+          - 'c pcie-bridge "lspci | grep -q bridge"'
+          - 'c pcie-endpoint "test $(lspci | wc -l) -ge 2"'
+
+    - from: inline
+      name: sensors
+      path: inline/sensors.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: sensors
+          description: On-SoC ADC, magnetometer and SHT4x temperature/humidity
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c adc-iio-device "grep -q rzv2h-adc /sys/bus/iio/devices/iio:device0/name"'
+          - 'c adc-read "cat /sys/bus/iio/devices/iio:device0/in_voltage0_raw"'
+          - 'c magnetometer-iio "grep -q mmc5633 /sys/bus/iio/devices/iio:device1/name"'
+          - 'c magnetometer-read "cat /sys/bus/iio/devices/iio:device1/in_magn_x_raw"'
+          - 'c sht4x-hwmon "grep -q sht4x /sys/class/hwmon/hwmon2/name"'
+          - 'c sht4x-temp "t=$(cat /sys/class/hwmon/hwmon2/temp1_input); test \$t -gt 0 -a \$t -lt 80000"'
+          - 'c sht4x-humidity "h=$(cat /sys/class/hwmon/hwmon2/humidity1_input); test \$h -gt 0 -a \$h -lt 100000"'
+
+    - from: inline
+      name: media
+      path: inline/media.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: media
+          description: Renesas media drivers and the audio codec
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c mmngr-module "lsmod | grep -q ^mmngr"'
+          - 'c vspm-module "lsmod | grep -q ^vspm"'
+          - 'c ap1302-module "lsmod | grep -q ^ap1302"'
+          - 'c audio-card "aplay -l | grep -q rsnd_rzv2h"'
+          - 'c audio-codec "aplay -l | grep -q tlv320aic3x"'
+          - 'c audio-pcm-node "test -c /dev/snd/pcmC0D0p"'
+
+    - from: inline
+      name: kernel-health
+      path: inline/kernel-health.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: kernel-health
+          description: Kernel log free of oopses and taints
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c no-kernel-oops "test $(dmesg | grep -ci oops) -eq 0"'
+          - 'c no-kernel-bug "test $(dmesg | grep -c BUG) -eq 0"'
+          - 'c taint-only-out-of-tree "test $(cat /proc/sys/kernel/tainted) -eq 4096"'
