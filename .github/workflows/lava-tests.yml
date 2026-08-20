@@ -193,46 +193,32 @@ jobs:
           reporter: java-junit
           fail-on-error: true
 
+      # Rendered by a script, not inline JS: LAVA's CSV has a quoted metadata
+      # column containing commas, so splitting on commas shifts every field.
+      - name: Generate PR comment body
+        if: always() && env.DEPLOY_JOB_ID != '' && inputs.is-pr
+        run: |
+          python3 lava/pr_comment.py lava-all-results.csv lava-comment.md \
+            "${{ vars.LAVA_HOST }}" "${{ inputs.image-name }}" "${{ inputs.machine }}" \
+            "$DEPLOY_JOB_ID $HARDWARE_JOB_ID"
+
       - name: Post results to PR
         if: always() && env.DEPLOY_JOB_ID != '' && inputs.is-pr
         uses: actions/github-script@v7
-        env:
-          LAVA_HOST: ${{ vars.LAVA_HOST }}
-          IMAGE_NAME: ${{ inputs.image-name }}
-          MACHINE: ${{ inputs.machine }}
         with:
           script: |
             const fs = require('fs');
-            const jobIds = [process.env.DEPLOY_JOB_ID, process.env.HARDWARE_JOB_ID].filter(Boolean);
-            let rows = [];
+            let body;
             try {
-              const csv = fs.readFileSync('lava-all-results.csv', 'utf8').trim().split('\n');
-              const header = csv[0].split(',');
-              rows = csv.slice(1).map(line => {
-                const cells = line.split(',');
-                return Object.fromEntries(header.map((h, i) => [h, cells[i]]));
-              }).filter(r => r.suite !== 'lava');
-            } catch {}
-            const passed = rows.filter(r => (r.result || '').toLowerCase() === 'pass').length;
-            const failed = rows.filter(r => !['pass', 'skip'].includes((r.result || '').toLowerCase())).length;
-            const icon = (failed === 0 && rows.length) ? '✅' : '❌';
-            const lines = [
-              `## ${icon} LAVA fastboot deploy — \`${process.env.IMAGE_NAME}\` on \`${process.env.MACHINE}\``,
-              '',
-              jobIds.map(id => `[job #${id}](http://${process.env.LAVA_HOST}/scheduler/job/${id})`).join(' · '),
-              '',
-              `**${passed} passed** · **${failed} failed**`,
-              '',
-              '| Suite | Test Case | Result |',
-              '|-------|-----------|--------|',
-              ...rows.map(r => `| ${(r.suite || '').replace(/^\d+_/, '')} | \`${r.name}\` | ${r.result} |`),
-            ];
-            if (!rows.length) lines.push('| — | No test results found | — |');
+              body = fs.readFileSync('lava-comment.md', 'utf8');
+            } catch {
+              body = `## ❓ LAVA Test Results\n\nResults not available — check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).`;
+            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ inputs.pr-number }},
-              body: lines.join('\n'),
+              body,
             });
 
       - name: Fail if a LAVA job did not complete or had test failures
