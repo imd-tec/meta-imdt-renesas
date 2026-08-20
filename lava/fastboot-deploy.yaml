@@ -1,0 +1,122 @@
+# Deploy a rootfs to the board with u-boot fastboot and prove it boots.
+# The image goes to the inactive A/B slot and is booted once without saveenv, so
+# a bad image cannot strand the fixture. CI rewrites the url below.
+device_type: imdt-v2h-sbc
+job_name: Fastboot rootfs deploy on imdt-v2h-sbc
+
+timeouts:
+  job:
+    minutes: 60
+  action:
+    minutes: 15
+  connection:
+    minutes: 5
+  actions:
+    # Entering fastboot means a reset plus catching the 2s autoboot window.
+    uboot-enter-fastboot:
+      minutes: 6
+    # ~1.2 GB over the USBHS gadget, sent sparse (256 MB download buffer).
+    fastboot-flash-action:
+      minutes: 30
+    bootloader-interrupt:
+      minutes: 3
+priority: medium
+visibility: public
+
+metadata:
+  machine: imdt-v2h-sbc
+  deploy-method: fastboot-via-uboot
+  target-slot: root1
+
+actions:
+
+# Reboot into a known state and log in: a previous job may have left the console
+# at a shell, a login prompt or u-boot, and auto_login matches only one of those.
+- boot:
+    method: minimal
+    auto_login:
+      login_prompt: 'imdt-v2h-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2h-sbc:[^#]*# '
+    timeout:
+      minutes: 5
+
+# Flash the inactive slot. fastboot-reboot is the only way out of the gadget
+# loop, which ignores the console while it runs.
+- deploy:
+    timeout:
+      minutes: 40
+    to: fastboot
+    images:
+      root1:
+        url: file:///srv/lava-images/imdt-image-base-imdt-v2h-sbc.rootfs.ext4
+        reboot: fastboot-reboot
+
+# Absorb the autoboot that follows, proving the board survived the flash.
+- boot:
+    method: minimal
+    reset: false
+    auto_login:
+      login_prompt: 'imdt-v2h-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2h-sbc:[^#]*# '
+    timeout:
+      minutes: 8
+
+# Boot the slot just written; mmcboot derives bootargs from mmcdev/mmcpart.
+- boot:
+    method: u-boot
+    commands: root1
+    failure_retry: 2
+    auto_login:
+      login_prompt: 'imdt-v2h-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2h-sbc:[^#]*# '
+    timeout:
+      minutes: 10
+
+# Confirm the running system is the deployed one. Interactive tests run over the
+# console, so the DUT needs no overlay, network or ssh to report results.
+- test:
+    timeout:
+      minutes: 6
+    interactive:
+    - name: deploy-verify
+      prompts:
+      - 'root@imdt-v2h-sbc:[^#]*# '
+      script:
+      # The deploy proof: userspace is running from the partition fastboot wrote.
+      - command: cat /proc/cmdline
+        name: booted-slot
+        successes:
+        - message: 'root=/dev/mmcblk1p3'
+        failures:
+        - message: 'root=/dev/mmcblk1p2'
+          error: 'booted the default slot, not the freshly flashed one'
+      # -r, or findmnt pads the columns and no fixed-space pattern can match.
+      - command: findmnt -nro SOURCE,FSTYPE,OPTIONS /
+        name: rootfs-mounted-rw
+        successes:
+        - message: '/dev/mmcblk1p3 ext4 rw'
+      - command: cat /etc/hwrevision
+        name: hwrevision
+        successes:
+        - message: 'imdt-v2h-sbc'
+      - command: grep ^ID= /etc/os-release
+        name: os-release
+        successes:
+        - message: 'ID=imdt'
+      - command: uname -a
+        name: kernel-version
+        successes:
+        - message: 'aarch64 GNU/Linux'
+      # A rootfs that fastboot truncated or mis-aligned shows up here. Tagged
+      # rather than matched with '^0': pexpect anchors ^ at the buffer start, so
+      # an anchored pattern loses the race to the shell prompt.
+      - command: "dmesg | grep -c 'EXT4-fs error' | sed 's/^/ext4-errors=/'"
+        name: no-ext4-errors
+        successes:
+        - message: 'ext4-errors=0'

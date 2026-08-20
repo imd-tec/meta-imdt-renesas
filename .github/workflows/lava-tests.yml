@@ -1,0 +1,238 @@
+name: LAVA Hardware Tests
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: Image whose rootfs is deployed to the board (e.g. imdt-image-base)
+        type: string
+        default: imdt-image-base
+      machine:
+        description: Yocto MACHINE the rootfs was built for — part of the artifact name
+        type: string
+        default: imdt-v2h-sbc
+      wg-slot:
+        description: WireGuard slot to reach the lab LAN, read as the WG_CONF_<slot> secret. Never share a slot between concurrent jobs.
+        type: string
+        required: true
+      is-pr:
+        type: boolean
+        default: false
+      pr-number:
+        type: number
+        default: 0
+    secrets:
+      LAVA_TOKEN:
+        required: true
+      LAVA_USERNAME:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  lava-test:
+    # GitHub-hosted, tunnelling to the lab, so hardware tests do not queue behind builds.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # One pipeline at a time per board: it resets the board and rewrites a slot.
+    concurrency:
+      group: lava-dut-${{ inputs.machine }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    env:
+      LAVA_TOKEN: ${{ secrets.LAVA_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # The peer is pre-provisioned and split-tunnelled (lab subnets only), so the
+      # runner's default route is untouched and nothing is generated at run time.
+      - name: Bring up WireGuard tunnel to lab LAN
+        env:
+          WG_CONF: ${{ secrets[format('WG_CONF_{0}', inputs.wg-slot)] }}
+        run: |
+          if [ -z "$WG_CONF" ]; then
+            echo "Secret WG_CONF_${{ inputs.wg-slot }} is empty or not set."
+            echo "Fork PRs do not receive secrets; otherwise check the slot number."
+            exit 1
+          fi
+          sudo apt-get install -y wireguard-tools >/dev/null 2>&1 \
+            || { sudo apt-get update -qq && sudo apt-get install -y wireguard-tools >/dev/null; }
+          printf '%s\n' "$WG_CONF" | sudo tee /etc/wireguard/wg0.conf >/dev/null
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          sudo wg-quick up wg0
+          # Assert reachability now, or a dead tunnel surfaces later as a lavacli timeout.
+          for i in $(seq 30); do
+            ping -c1 -W1 "${{ vars.LAVA_HOST }}" >/dev/null 2>&1 && break
+            sleep 1
+          done
+          if ! curl -fsS --max-time 10 -o /dev/null "http://${{ vars.LAVA_HOST }}/"; then
+            echo "LAVA host ${{ vars.LAVA_HOST }} unreachable over the tunnel"
+            sudo wg show
+            exit 1
+          fi
+          echo "Tunnel up on slot ${{ inputs.wg-slot }}; LAVA host reachable"
+
+      - name: Install lavacli
+        run: |
+          if ! python3 -m venv "$HOME/lavacli-venv" 2>/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y python3-venv >/dev/null
+            python3 -m venv "$HOME/lavacli-venv"
+          fi
+          "$HOME/lavacli-venv/bin/pip" install lavacli --quiet
+          echo "$HOME/lavacli-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Configure lavacli identity
+        run: |
+          mkdir -p ~/.config
+          cat > ~/.config/lavacli.yaml <<EOF
+          lava-ci:
+            uri: http://${{ vars.LAVA_HOST }}/RPC2
+            username: ${{ secrets.LAVA_USERNAME }}
+            token: ${LAVA_TOKEN}
+          EOF
+          chmod 600 ~/.config/lavacli.yaml
+
+      # kas-gh-ci staged the rootfs on the worker as <stem>-<sha>.<ext>.
+      - name: Submit fastboot deploy job
+        run: |
+          ARTIFACT="${{ inputs.image-name }}-${{ inputs.machine }}.rootfs.ext4"
+          ROOTFS="${ARTIFACT%.*}-${{ github.sha }}.${ARTIFACT##*.}"
+          echo "rootfs on worker: $ROOTFS"
+          sed -e "s|url: file://.*|url: file://${{ vars.LAVA_IMAGES_DIR }}/${ROOTFS}|" \
+              -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
+              lava/fastboot-deploy.yaml > /tmp/lava-fastboot-deploy.yaml
+          JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-fastboot-deploy.yaml)
+          echo "fastboot-deploy: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
+          echo "DEPLOY_JOB_ID=$JOB_ID" >> "$GITHUB_ENV"
+
+      - name: Wait for fastboot deploy job
+        run: bash lava/wait-job.sh "$DEPLOY_JOB_ID"
+
+      - name: Show LAVA job results
+        if: always() && env.DEPLOY_JOB_ID != ''
+        run: |
+          lavacli --identity lava-ci jobs show "$DEPLOY_JOB_ID" || true
+          lavacli --identity lava-ci results "$DEPLOY_JOB_ID" || true
+
+      - name: Fetch LAVA results CSV
+        if: always() && env.DEPLOY_JOB_ID != ''
+        run: |
+          curl -fsSL -H "Authorization: Token $LAVA_TOKEN" \
+            "http://${{ vars.LAVA_HOST }}/results/${DEPLOY_JOB_ID}/csv" \
+            -o lava-all-results.csv || true
+
+      - name: Fetch LAVA logs
+        if: always() && env.DEPLOY_JOB_ID != ''
+        run: |
+          mkdir -p lava-logs
+          lavacli --identity lava-ci jobs logs "$DEPLOY_JOB_ID" \
+            > "lava-logs/fastboot-deploy-${DEPLOY_JOB_ID}.log" 2>&1 || true
+          cp lava-all-results.csv lava-logs/ 2>/dev/null || true
+
+      - name: Upload LAVA logs artifact
+        if: always() && env.DEPLOY_JOB_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: lava-logs-${{ inputs.image-name }}-${{ github.sha }}
+          path: lava-logs/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Convert LAVA results to JUnit XML
+        if: always() && env.DEPLOY_JOB_ID != ''
+        run: |
+          python3 lava/lava_to_junit.py lava-all-results.csv lava-results.xml "$DEPLOY_JOB_ID"
+
+      - name: Publish test results
+        if: always() && env.DEPLOY_JOB_ID != ''
+        uses: dorny/test-reporter@v2
+        with:
+          name: LAVA Test Results (${{ inputs.image-name }}, ${{ inputs.machine }})
+          path: lava-results.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Post results to PR
+        if: always() && env.DEPLOY_JOB_ID != '' && inputs.is-pr
+        uses: actions/github-script@v7
+        env:
+          LAVA_HOST: ${{ vars.LAVA_HOST }}
+          IMAGE_NAME: ${{ inputs.image-name }}
+          MACHINE: ${{ inputs.machine }}
+        with:
+          script: |
+            const fs = require('fs');
+            const jobId = process.env.DEPLOY_JOB_ID;
+            let rows = [];
+            try {
+              const csv = fs.readFileSync('lava-all-results.csv', 'utf8').trim().split('\n');
+              const header = csv[0].split(',');
+              rows = csv.slice(1).map(line => {
+                const cells = line.split(',');
+                return Object.fromEntries(header.map((h, i) => [h, cells[i]]));
+              }).filter(r => r.suite !== 'lava');
+            } catch {}
+            const passed = rows.filter(r => (r.result || '').toLowerCase() === 'pass').length;
+            const failed = rows.filter(r => !['pass', 'skip'].includes((r.result || '').toLowerCase())).length;
+            const icon = (failed === 0 && rows.length) ? '✅' : '❌';
+            const lines = [
+              `## ${icon} LAVA fastboot deploy — \`${process.env.IMAGE_NAME}\` on \`${process.env.MACHINE}\``,
+              '',
+              `[job #${jobId}](http://${process.env.LAVA_HOST}/scheduler/job/${jobId})`,
+              '',
+              `**${passed} passed** · **${failed} failed**`,
+              '',
+              '| Suite | Test Case | Result |',
+              '|-------|-----------|--------|',
+              ...rows.map(r => `| ${(r.suite || '').replace(/^\d+_/, '')} | \`${r.name}\` | ${r.result} |`),
+            ];
+            if (!rows.length) lines.push('| — | No test results found | — |');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ inputs.pr-number }},
+              body: lines.join('\n'),
+            });
+
+      - name: Fail if the LAVA job did not complete or had test failures
+        if: env.DEPLOY_JOB_ID != ''
+        run: |
+          HEALTH=$(lavacli --identity lava-ci jobs show "$DEPLOY_JOB_ID" | grep '^Health' | awk '{print $NF}')
+          echo "Job $DEPLOY_JOB_ID health: $HEALTH"
+          [ "$HEALTH" = "Complete" ] || { echo "LAVA job did not complete"; exit 1; }
+          python3 lava/check_results.py < lava-all-results.csv
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.config/lavacli.yaml
+
+      # Last step: every step above needs the tunnel.
+      - name: Tear down WireGuard tunnel
+        if: always()
+        run: sudo wg-quick down wg0 || true
+
+  notify-lava:
+    runs-on: ubuntu-latest
+    needs: lava-test
+    if: always()
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "text": "${{ needs.lava-test.result == 'success' && '✅' || '❌' }} *LAVA fastboot deploy* (${{ inputs.image-name }} on ${{ inputs.machine }}) — ${{ needs.lava-test.result }}\n\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Triggered by:* ${{ github.actor }}\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
