@@ -1,0 +1,43 @@
+From 38f108c7fb074470893f0c883ed248eb33744907 Mon Sep 17 00:00:00 2001
+From: Andrei Smirnov <andrei.smirnov@imd-tec.com>
+Date: Tue, 25 Aug 2026 15:21:21 +0100
+Subject: [PATCH] arm64: imdt-v2h-sbc: enable Panfrost GPU driver and DT node
+
+Enable CONFIG_DRM_PANFROST in the imdt kernel config fragment and set
+status = "okay" on the gpu node so the on-SoC Mali-G31 (GE3D) is
+usable via the panfrost DRM driver.
+---
+ arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts | 4 ++++
+ arch/arm64/configs/imdt.cfg                  | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index 8c8d5b7cc5f8..f25672f48c13 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -157,6 +157,10 @@ &usb2_phy1 {
+ 	status = "okay";
+ };
+ 
++&gpu {
++	status = "okay";
++};
++
+ &cru2 {
+ 	status = "okay";
+ };
+diff --git a/arch/arm64/configs/imdt.cfg b/arch/arm64/configs/imdt.cfg
+index 21e0bf1afd79..c25fce079480 100644
+--- a/arch/arm64/configs/imdt.cfg
++++ b/arch/arm64/configs/imdt.cfg
+@@ -19,6 +19,7 @@ CONFIG_DMABUF_HEAPS_SYSTEM=y
+ CONFIG_DRM_DW_HDMI_AHB_AUDIO=y
+ CONFIG_DRM_DW_HDMI_CEC=y
+ CONFIG_DRM_DW_HDMI_I2S_AUDIO=y
++CONFIG_DRM_PANFROST=y
+ CONFIG_DRM_THINE_THC63LVD1024=y
+ CONFIG_DYNAMIC_DEBUG=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+-- 
+2.43.0
+
