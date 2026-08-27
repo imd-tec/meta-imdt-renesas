@@ -157,6 +157,20 @@ actions:
           - 'c audio-codec "aplay -l | grep -q tlv320aic3x"'
           - 'c audio-pcm-node "test -c /dev/snd/pcmC0D0p"'
 
+    - from: inline
+      name: gpu
+      path: inline/gpu.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: gpu
+          description: Mali-G31 GPU (panfrost)
+        run:
+          steps:
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c gpu-driver-bound "readlink -f /sys/bus/platform/devices/14850000.gpu/driver | grep -q panfrost"'
+          - 'c gpu-render-node "test -c /dev/dri/renderD128"'
+
     # Cases transcribed from "Renesas BSP Test Plan - working.md"; names are the
     # plan's own test IDs. Tests needing a peer, a display, a camera or a cable
     # change are not here.
