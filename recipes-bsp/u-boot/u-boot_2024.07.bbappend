@@ -1,5 +1,5 @@
 SRC_URI = "git://github.com/imd-tec/renesas-u-boot-cip.git;protocol=https;branch=imdt-v2024.07"
-SRCREV = "e1add1386c451c760548c144681ce99af667ea62"
+SRCREV = "3baf6b619845882933d6305eaaba8cf43da43f6b"
 inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native
 
 DEPENDS += "kern-tools-native u-boot-tools-native"
