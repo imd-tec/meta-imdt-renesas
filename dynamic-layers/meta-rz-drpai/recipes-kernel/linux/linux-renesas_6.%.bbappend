@@ -6,4 +6,5 @@ SRC_URI:append:imdt-v2n-sbc = " \
 
 SRC_URI:append:imdt-v2h-sbc = " \
 	file://0002-add-drpai-to-v2h.patch \
+	file://0003-add-drpai0-shared-memory-v2h.patch \
 "

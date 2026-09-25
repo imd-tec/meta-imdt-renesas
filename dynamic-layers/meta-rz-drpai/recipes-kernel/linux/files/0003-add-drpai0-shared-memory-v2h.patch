@@ -1,0 +1,23 @@
+From bbedba6d8a568d5b1007e07f3f27a69fab075608 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Wed, 23 Sep 2026 10:24:30 +0100
+Subject: [PATCH] add shared memory region reference to drpai0 node on v2h
+
+---
+ arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+index e34938580e44..727dbd76fd81 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
++++ b/arch/arm64/boot/dts/renesas/imdt-v2h-sbc.dts
+@@ -110,6 +110,7 @@ vbus {
+
+ &drpai0 {
+ 	memory-region = <&drp_reserved>;
++	memory-shared-for-drpai-ext-cont = <&shared_drp_reserved>;
+ 	status = "okay";
+ };
+
+--
+2.34.1
