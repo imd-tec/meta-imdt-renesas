@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Wed, 30 Sep 2026 15:00:29 +0100
+Subject: [PATCH] configs: imdt-v2n-sbc: enable USB fastboot for LAVA
+ deploy
+
+Needed for the same fastboot-via-uboot deploy method already used for
+imdt-v2h-sbc in lava/fastboot-deploy.yaml. FASTBOOT_BUF_ADDR reuses
+imdt-v2h-sbc's exact value (0x62000000, size 0x10000000): it sits
+inside the cma-default reserved-memory region in both boards' kernel
+DTS (which both start at 0x58000000), the same way SYS_LOAD_ADDR does
+- safe because, like SYS_LOAD_ADDR, it is only used transiently by
+u-boot before the kernel's own reservation takes effect.
+---
+ configs/imdt-v2n-sbc_defconfig | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/configs/imdt-v2n-sbc_defconfig b/configs/imdt-v2n-sbc_defconfig
+index d5e017c..4797df1 100644
+--- a/configs/imdt-v2n-sbc_defconfig
++++ b/configs/imdt-v2n-sbc_defconfig
+@@ -88,3 +88,8 @@ CONFIG_CMD_SF=y
+ CONFIG_SPI_FLASH_MACRONIX=y
+ CONFIG_BOARD_SIZE_LIMIT=1572864
+ CONFIG_SYS_MALLOC_LEN=0x4000000
++CONFIG_USB_FUNCTION_FASTBOOT=y
++CONFIG_FASTBOOT_BUF_ADDR=0x62000000
++CONFIG_FASTBOOT_BUF_SIZE=0x10000000
++CONFIG_FASTBOOT_FLASH=y
++CONFIG_FASTBOOT_FLASH_MMC_DEV=0
+-- 
+2.34.1
+

@@ -1,0 +1,107 @@
+# Deploy a rootfs to the board with u-boot fastboot and prove it boots.
+# The image goes to the inactive A/B slot and is booted once without saveenv, so
+# a bad image cannot strand the fixture. CI rewrites the url below.
+device_type: imdt-v2n-sbc
+job_name: Fastboot rootfs deploy on imdt-v2n-sbc
+
+timeouts:
+  job:
+    minutes: 60
+  action:
+    minutes: 15
+  connection:
+    minutes: 5
+  actions:
+    uboot-enter-fastboot:
+      minutes: 6
+    fastboot-flash-action:
+      minutes: 30
+    bootloader-interrupt:
+      minutes: 3
+priority: medium
+visibility: public
+
+metadata:
+  machine: imdt-v2n-sbc
+  deploy-method: fastboot-via-uboot
+  target-slot: root1
+
+actions:
+
+- boot:
+    method: minimal
+    auto_login:
+      login_prompt: 'imdt-v2n-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2n-sbc:[^#]*# '
+    timeout:
+      minutes: 5
+
+- deploy:
+    timeout:
+      minutes: 40
+    to: fastboot
+    images:
+      root1:
+        url: file:///srv/lava-images/imdt-image-base-imdt-v2n-sbc.rootfs.ext4
+        reboot: fastboot-reboot
+
+- boot:
+    method: minimal
+    reset: false
+    auto_login:
+      login_prompt: 'imdt-v2n-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2n-sbc:[^#]*# '
+    timeout:
+      minutes: 8
+
+- boot:
+    method: u-boot
+    commands: root1
+    failure_retry: 2
+    auto_login:
+      login_prompt: 'imdt-v2n-sbc login:'
+      username: root
+    prompts:
+    - 'root@imdt-v2n-sbc:[^#]*# '
+    timeout:
+      minutes: 10
+
+- test:
+    timeout:
+      minutes: 6
+    interactive:
+    - name: deploy-verify
+      prompts:
+      - 'root@imdt-v2n-sbc:[^#]*# '
+      script:
+      - command: cat /proc/cmdline
+        name: booted-slot
+        successes:
+        - message: 'root=/dev/mmcblk1p3'
+        failures:
+        - message: 'root=/dev/mmcblk1p2'
+          error: 'booted the default slot, not the freshly flashed one'
+      - command: findmnt -nro SOURCE,FSTYPE,OPTIONS /
+        name: rootfs-mounted-rw
+        successes:
+        - message: '/dev/mmcblk1p3 ext4 rw'
+      - command: cat /etc/hwrevision
+        name: hwrevision
+        successes:
+        - message: 'imdt-v2n-sbc'
+      - command: grep ^ID= /etc/os-release
+        name: os-release
+        successes:
+        - message: 'ID=imdt'
+      - command: uname -a
+        name: kernel-version
+        successes:
+        - message: 'aarch64 GNU/Linux'
+      - command: "dmesg | grep -c 'EXT4-fs error' | sed 's/^/ext4-errors=/'"
+        name: no-ext4-errors
+        successes:
+        - message: 'ext4-errors=0'

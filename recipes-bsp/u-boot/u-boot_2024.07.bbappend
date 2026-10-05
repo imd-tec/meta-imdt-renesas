@@ -17,6 +17,7 @@ SRC_URI:append:imdt-v2n-sbc = " \
     file://0001-fix-imdt-v2n-sbc-defconfig-arch-selection.patch \
     file://0002-fix-imdt-v2n-sbc-board-c-include-for-arch-renesas.patch \
     file://0003-fix-imdt-v2n-sbc-serial-hssrr-undefined-reference.patch \
+    file://0004-fix-imdt-v2n-sbc-enable-fastboot.patch \
 "
 
 # Default name of u-boot initial env, but enable individual recipes to change

@@ -1,0 +1,51 @@
+{# device_type = "imdt-v2n-sbc" #}
+{# Renesas RZ/V2N (R9A09G056). Mirrors imdt-v2h-sbc.jinja2 — same carrier
+   board, same u-boot/fastboot scheme. #}
+{% extends 'base-uboot.jinja2' %}
+
+{% set console_device = console_device|default('ttySC0') %}
+{% set baud_rate = baud_rate|default(115200) %}
+
+{% set bootloader_prompt = bootloader_prompt|default('=>') %}
+{% set interrupt_prompt = interrupt_prompt|default('Hit any key to stop autoboot') %}
+{% set interrupt_char = interrupt_char|default('') %}
+
+{% set soft_reboot_command = soft_reboot_command|default(['root', 'reboot', 'reboot', 'reset']) %}
+
+{% set hard_reset_command = hard_reset_command|default(
+     '/usr/local/bin/board-reset --fastboot-serial ' + fastboot_serial_number +
+     ' --adb-serial ' + adb_serial_number) %}
+
+{% set shutdown_message = shutdown_message|default('NOTICE: +BL2') %}
+
+{% set fastboot_serial_number = fastboot_serial_number|default('imdt-v2n-sbc') %}
+{% set adb_serial_number = adb_serial_number|default('0123456789ABCDEF') %}
+{% set device_info = device_info|default([{'board_id': fastboot_serial_number}]) %}
+
+{# mmc 1 = SD card, mmc 0 = eMMC #}
+{% set fastboot_deploy_uboot_commands = fastboot_deploy_uboot_commands|default([
+     "setenv fastboot_partition_alias_env 1:1",
+     "setenv fastboot_partition_alias_root0 1:2",
+     "setenv fastboot_partition_alias_root1 1:3",
+     "fastboot usb 0"]) %}
+{% set fastboot_sequence = fastboot_sequence|default(['reboot']) %}
+{% set flash_cmds_order = flash_cmds_order|default(['env', 'root0', 'root1']) %}
+
+{% set fastboot_boot_uboot = "
+        # method specific stanza
+        root0:
+          commands:
+          - setenv mmcdev 1
+          - setenv mmcpart 2
+          - run mmcboot
+        root1:
+          commands:
+          - setenv mmcdev 1
+          - setenv mmcpart 3
+          - run mmcboot
+        emmc-root0:
+          commands:
+          - setenv mmcdev 0
+          - setenv mmcpart 2
+          - run mmcboot
+" %}

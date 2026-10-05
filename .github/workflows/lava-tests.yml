@@ -11,6 +11,14 @@ on:
         description: Yocto MACHINE the rootfs was built for — part of the artifact name
         type: string
         default: imdt-v2h-sbc
+      fastboot-deploy-file:
+        description: lava/ job def for the fastboot deploy
+        type: string
+        default: lava/fastboot-deploy.yaml
+      hardware-tests-file:
+        description: lava/ job def for the hardware tests
+        type: string
+        default: lava/hardware-tests.yaml
       wg-slot:
         description: WireGuard slot to reach the lab LAN, read as the WG_CONF_<slot> secret. Never share a slot between concurrent jobs.
         type: string
@@ -111,7 +119,7 @@ jobs:
           echo "rootfs on worker: $ROOTFS"
           sed -e "s|url: file://.*|url: file://${{ vars.LAVA_IMAGES_DIR }}/${ROOTFS}|" \
               -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
-              lava/fastboot-deploy.yaml > /tmp/lava-fastboot-deploy.yaml
+              ${{ inputs.fastboot-deploy-file }} > /tmp/lava-fastboot-deploy.yaml
           JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-fastboot-deploy.yaml)
           echo "fastboot-deploy: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
           echo "DEPLOY_JOB_ID=$JOB_ID" >> "$GITHUB_ENV"
@@ -123,7 +131,7 @@ jobs:
       - name: Submit hardware tests job
         run: |
           sed -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
-              lava/hardware-tests.yaml > /tmp/lava-hardware-tests.yaml
+              ${{ inputs.hardware-tests-file }} > /tmp/lava-hardware-tests.yaml
           JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-hardware-tests.yaml)
           echo "hardware-tests: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
           echo "HARDWARE_JOB_ID=$JOB_ID" >> "$GITHUB_ENV"

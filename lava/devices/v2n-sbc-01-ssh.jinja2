@@ -1,0 +1,6 @@
+{# ssh view of v2n-sbc-01, for hardware tests that need a shell. #}
+{% extends 'ssh-keepalive.jinja2' %}
+{% set ssh_host = '127.0.0.1' %}
+{% set ssh_port = 2222 %}
+{% set ssh_user = 'root' %}
+{% set ssh_identity_file = '/var/lib/lava/dispatcher/worker/lava-dut-key' %}
