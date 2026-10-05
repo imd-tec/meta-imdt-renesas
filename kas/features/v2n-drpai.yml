@@ -1,0 +1,10 @@
+header:
+  version: 15
+
+repos:
+  rzv2n_drp-ai_driver:
+    url: https://github.com/renesas-rz/rzv2n_drp-ai_driver
+    commit: bb3e6a9283e2dda2bb4a3c25986a0a309f1db905
+    path: sources/meta-rz-features/rzv2n_drp-ai_driver
+    layers:
+      meta-rz-features/meta-rz-drpai:

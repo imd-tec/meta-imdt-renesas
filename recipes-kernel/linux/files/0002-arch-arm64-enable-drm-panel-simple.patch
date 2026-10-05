@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Wed, 30 Sep 2026 10:37:51 +0100
+Subject: [PATCH] arch: arm64: enable CONFIG_DRM_PANEL_SIMPLE for the
+ imdt-v2-sbc DSI panel overlay
+
+imdt-v2-sbc-dsi-panel.dts declares panel@0 with
+compatible = "imdt,im-msc-006", which is only matched by the generic
+panel-simple driver (drivers/gpu/drm/panel/panel-simple.c). Without
+this driver the panel never registers, so rzg2l-du's encoder chain
+never completes: "rzg2l-du: failed to initialize encoders", no
+/dev/dri device, weston's DRM backend then fails with "no drm device
+found".
+
+CONFIG_DRM_PANFROST's presence just above shows this same imdt.cfg
+fragment is already shared and applied unconditionally across both
+imdt-v2h-sbc and imdt-v2n-sbc (it patches in an unqualified SRC_URI
+append in linux-renesas_6.1.bbappend); this addition follows the same
+pattern rather than being machine-gated.
+---
+ arch/arm64/configs/imdt.cfg | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/imdt.cfg b/arch/arm64/configs/imdt.cfg
+index c25fce0..687fd8b 100644
+--- a/arch/arm64/configs/imdt.cfg
++++ b/arch/arm64/configs/imdt.cfg
+@@ -20,6 +20,7 @@ CONFIG_DRM_DW_HDMI_AHB_AUDIO=y
+ CONFIG_DRM_DW_HDMI_CEC=y
+ CONFIG_DRM_DW_HDMI_I2S_AUDIO=y
+ CONFIG_DRM_PANFROST=y
++CONFIG_DRM_PANEL_SIMPLE=y
+ CONFIG_DRM_THINE_THC63LVD1024=y
+ CONFIG_DYNAMIC_DEBUG=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+-- 
+2.34.1
+

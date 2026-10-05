@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Fri, 25 Sep 2026 11:12:34 +0100
+Subject: [PATCH] configs: imdt-v2n-sbc: fix arch selection, rename
+ TEXT_BASE, set SYS_LOAD_ADDR and OF_UPSTREAM
+
+The defconfig selected the legacy ARCH_RMOBILE architecture, which has
+no matching arch/board Kconfig tree in this u-boot version, while all
+of imdt-v2n-sbc's other options (R9A09G056, TARGET_IMDT_RZV2N_EVK,
+PINCTRL_PFC_RZV2N, etc.) are defined under ARCH_RENESAS, same as
+imdt-v2h-sbc. This mismatch causes make oldconfig's dependency solver
+to enter a pathological state, running for 15+ minutes before being
+OOM-killed.
+
+Selecting ARCH_RENESAS in turn exposes CONFIG_SYS_LOAD_ADDR as a new,
+unanswered prompt (no default exists for this SoC family), which
+causes oldconfig to loop forever reading EOF from stdin in the
+non-interactive bitbake task environment. imdt-v2h-sbc_defconfig sets
+this to 0x58000000, which is the start address of its own cma-default
+reserved-memory region in the kernel DTS; imdt-v2n-sbc's DTS reserves
+its own cma-default region starting at the same address, so the same
+value applies by direct analogy.
+
+CONFIG_SYS_TEXT_BASE is also renamed to CONFIG_TEXT_BASE (the option
+was renamed upstream; the old name no longer exists in Kconfig and is
+silently dropped, leaving CONFIG_TEXT_BASE undefined at compile time),
+matching imdt-v2h-sbc_defconfig.
+
+Without an explicit CONFIG_OF_UPSTREAM=n, ARCH_RENESAS boards default
+to looking up their device tree under dts/upstream/src/arm64/, where
+imdt-v2n-sbc.dts has not been imported, causing a "no rule to make
+target" failure at the dtbs build step. imdt-v2h-sbc_defconfig already
+sets this to n, keeping the DT build on the existing
+arch/arm/dts/imdt-v2n-sbc.dts in this u-boot tree.
+---
+ configs/imdt-v2n-sbc_defconfig | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/configs/imdt-v2n-sbc_defconfig b/configs/imdt-v2n-sbc_defconfig
+index 040b7e9..d5e017c 100644
+--- a/configs/imdt-v2n-sbc_defconfig
++++ b/configs/imdt-v2n-sbc_defconfig
+@@ -1,8 +1,10 @@
+ CONFIG_USB_FUNCTION_MASS_STORAGE=y
+ CONFIG_ARM=y
+ CONFIG_ARCH_CPU_INIT=y
+-CONFIG_ARCH_RMOBILE=y
+-CONFIG_SYS_TEXT_BASE=0x50000000
++CONFIG_ARCH_RENESAS=y
++CONFIG_OF_UPSTREAM=n
++CONFIG_TEXT_BASE=0x50000000
++CONFIG_SYS_LOAD_ADDR=0x58000000
+ CONFIG_ENV_SIZE=0x20000
+ CONFIG_DM_GPIO=y
+ CONFIG_DEFAULT_DEVICE_TREE="imdt-v2n-sbc"
+--
+2.34.1
+</content>

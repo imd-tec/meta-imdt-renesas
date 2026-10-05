@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Fri, 25 Sep 2026 11:45:00 +0100
+Subject: [PATCH] board: imdt-v2n-sbc: fix include and macro name for
+ ARCH_RENESAS
+
+With ARCH_RENESAS now selected (see the defconfig arch-selection fix),
+asm/arch/rmobile.h no longer resolves - that header only exists under
+the legacy ARCH_RMOBILE tree. imdt-v2h-sbc.c, which already builds
+correctly under ARCH_RENESAS, includes asm/arch/renesas.h instead.
+
+CONFIG_SYS_TEXT_BASE was also renamed upstream to CONFIG_TEXT_BASE
+(see the defconfig fix); the old macro is no longer defined by Kconfig
+under ARCH_RENESAS, causing a build failure ('CONFIG_SYS_TEXT_BASE'
+undeclared). imdt-v2h-sbc.c already uses CONFIG_TEXT_BASE at the
+equivalent line.
+
+---
+ board/imdt/imdt-v2n-sbc/imdt-v2n-sbc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/imdt/imdt-v2n-sbc/imdt-v2n-sbc.c b/board/imdt/imdt-v2n-sbc/imdt-v2n-sbc.c
+index b0a053c..8bac461 100644
+--- a/board/imdt/imdt-v2n-sbc/imdt-v2n-sbc.c
++++ b/board/imdt/imdt-v2n-sbc/imdt-v2n-sbc.c
+@@ -19,7 +19,7 @@
+ #include <asm/arch/sys_proto.h>
+ #include <asm/gpio.h>
+ #include <asm/arch/gpio.h>
+-#include <asm/arch/rmobile.h>
++#include <asm/arch/renesas.h>
+ #include <asm/arch/rcar-mstp.h>
+ #include <asm/arch/sh_sdhi.h>
+ #include <i2c.h>
+@@ -253,7 +253,7 @@ int board_early_init_f(void)
+ int board_init(void)
+ {
+ 	/* address of boot parameters */
+-	gd->bd->bi_boot_params = CONFIG_SYS_TEXT_BASE + 0x50000;
++	gd->bd->bi_boot_params = CONFIG_TEXT_BASE + 0x50000;
+ 
+ 	board_usb_init();
+ 
+-- 
+2.34.1
+

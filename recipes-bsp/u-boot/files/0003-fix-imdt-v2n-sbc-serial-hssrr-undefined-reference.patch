@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Fri, 25 Sep 2026 11:50:00 +0100
+Subject: [PATCH] drivers: serial: serial_sh: exclude R9A09G056 (RZ/V2N)
+ from HSSRR access
+
+The RZ SoC family register-accessor block (which covers both
+R9A09G056/imdt-v2n-sbc and R9A09G057/imdt-v2h-sbc) does not define
+sci_HSSRR_out/sci_HSSRR_in - HSSRR is an HSCIF-only register not
+present in this SCIF register layout. R9A09G057 is already excluded
+from ever calling sci_out(port, HSSRR, ...); R9A09G056 was missing
+from that same exclusion list, causing an undefined reference at
+link time (and a segfault in the LTO linker while processing it).
+---
+ drivers/serial/serial_sh.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/serial/serial_sh.c b/drivers/serial/serial_sh.c
+index 5bd8afb..8200942 100644
+--- a/drivers/serial/serial_sh.c
++++ b/drivers/serial/serial_sh.c
+@@ -60,7 +60,7 @@ static void sh_serial_init_generic(struct uart_port *port)
+ #endif
+ 
+ #if !(defined(CONFIG_R9A07G044L) || defined(CONFIG_R9A07G054L) || defined(CONFIG_R9A07G044C) || defined(CONFIG_R9A07G043U)  \
+-|| defined(CONFIG_RZF_DEV) || defined(CONFIG_R9A09G057) || defined(CONFIG_R9A09G047))
++|| defined(CONFIG_RZF_DEV) || defined(CONFIG_R9A09G057) || defined(CONFIG_R9A09G056) || defined(CONFIG_R9A09G047))
+ #if IS_ENABLED(CONFIG_RCAR_GEN2) || IS_ENABLED(CONFIG_RCAR_GEN3) || IS_ENABLED(CONFIG_RCAR_GEN4)
+ 	if (port->type == PORT_HSCIF)
+ 		sci_out(port, HSSRR, HSSRR_SRE | HSSRR_SRCYC8);
+-- 
+2.34.1
+

@@ -7,7 +7,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 # meta-rz-bsp's linux-firmware_%.bbappend hard-sets COMPATIBLE_MACHINE to
 # "(smarc-rzg3l)", which would otherwise skip this recipe (and the
 # linux-firmware-ap1302/-sdiouartiw416 packages below) on our machine.
-COMPATIBLE_MACHINE:append = "|imdt-v2h-sbc"
+COMPATIBLE_MACHINE:append = "|imdt-v2h-sbc|imdt-v2n-sbc"
 
 SRC_URI:append = " \
     file://ap1302_ar1335_single_fw.bin \

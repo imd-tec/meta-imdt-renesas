@@ -59,3 +59,13 @@ jobs:
       is-pr: ${{ github.event_name == 'pull_request' }}
       pr-number: ${{ github.event.pull_request.number || 0 }}
     secrets: inherit
+
+  # Build-only for now: LAVA tests are not yet supported on the v2n SBC.
+  build-v2n:
+    uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
+    with:
+      kas-config: 'kas/imdt-v2n-base.yml'
+      machine: 'imdt-v2n-sbc'
+      artifact-name: 'imdt-image-base'
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

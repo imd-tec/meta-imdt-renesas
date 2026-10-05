@@ -13,6 +13,12 @@ SRC_URI:append = " \
     file://overlays.cfg \
 "
 
+SRC_URI:append:imdt-v2n-sbc = " \
+    file://0001-fix-imdt-v2n-sbc-defconfig-arch-selection.patch \
+    file://0002-fix-imdt-v2n-sbc-board-c-include-for-arch-renesas.patch \
+    file://0003-fix-imdt-v2n-sbc-serial-hssrr-undefined-reference.patch \
+"
+
 # Default name of u-boot initial env, but enable individual recipes to change
 # this value.
 UBOOT_INITIAL_ENV ?= "${PN}-initial-env"
