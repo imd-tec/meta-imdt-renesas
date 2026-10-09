@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       wg-slot: ${{ steps.cfg.outputs.wg-slot }}
+      wg-slot-v2n: ${{ steps.cfg.outputs.wg-slot-v2n }}
     steps:
       - id: cfg
         run: |
@@ -32,6 +33,8 @@ jobs:
             exit 1
           fi
           echo "wg-slot=$((WG_SLOT_BASE))" >> "$GITHUB_OUTPUT"
+          # The v2n LAVA job runs alongside v2h's, so it needs its own peer.
+          echo "wg-slot-v2n=$((WG_SLOT_BASE + 1))" >> "$GITHUB_OUTPUT"
 
   build:
     uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
@@ -60,12 +63,29 @@ jobs:
       pr-number: ${{ github.event.pull_request.number || 0 }}
     secrets: inherit
 
-  # Build-only for now: LAVA tests are not yet supported on the v2n SBC.
   build-v2n:
     uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
     with:
       kas-config: 'kas/imdt-v2n-base.yml'
       machine: 'imdt-v2n-sbc'
       artifact-name: 'imdt-image-base'
+      rsync-enabled: true
+      rsync-host: ${{ vars.LAVA_WORKER_HOST_V2N }}
+      rsync-user: ${{ vars.LAVA_WORKER_USER }}
+      rsync-dest: ${{ vars.LAVA_IMAGES_DIR }}/
+      rsync-pattern: '*.rootfs.ext4'
     secrets:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  lava-tests-v2n:
+    needs: [setup, build-v2n]
+    uses: ./.github/workflows/lava-tests.yml
+    with:
+      image-name: 'imdt-image-base'
+      machine: 'imdt-v2n-sbc'
+      fastboot-deploy-file: lava/fastboot-deploy-v2n.yaml
+      hardware-tests-file: lava/hardware-tests-v2n.yaml
+      wg-slot: ${{ needs.setup.outputs.wg-slot-v2n }}
+      is-pr: ${{ github.event_name == 'pull_request' }}
+      pr-number: ${{ github.event.pull_request.number || 0 }}
+    secrets: inherit

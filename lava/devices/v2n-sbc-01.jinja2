@@ -1,12 +1,4 @@
-{# v2n-sbc-01: IMDT V2N SBC. Worker TBD — placeholder below until confirmed.
- #
- # Install on the server:
- #   lava-server manage device-types add imdt-v2n-sbc
- #   lava-server manage devices add v2n-sbc-01 \
- #       --device-type imdt-v2n-sbc --worker <WORKER_HOSTNAME>
- #   # then place this file at
- #   # /etc/lava-server/dispatcher-config/devices/v2n-sbc-01.jinja2
- #}
+{# v2n-sbc-01: IMDT V2N SBC on pi-tester-8. Console via ser2net on the worker. #}
 {% extends 'imdt-v2n-sbc.jinja2' %}
 {% set connection_command = 'telnet 127.0.0.1 7008' %}
 {% set fastboot_serial_number = 'imdt-v2n-sbc' %}
