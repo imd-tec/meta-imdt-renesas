@@ -5,6 +5,7 @@ repos:
   meta-renesas:
     url: https://github.com/renesas-rz/meta-renesas
     branch: scarthgap/rz
+    commit: 4823845d3a9a772324218ba753a0e7983905c924
     path: sources/meta-renesas
     layers:
       meta-rz-distro:
