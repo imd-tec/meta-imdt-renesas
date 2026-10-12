@@ -33,8 +33,8 @@ jobs:
             exit 1
           fi
           echo "wg-slot=$((WG_SLOT_BASE))" >> "$GITHUB_OUTPUT"
-          # The v2n LAVA job runs alongside v2h's, so it needs its own peer.
-          echo "wg-slot-v2n=$((WG_SLOT_BASE + 1))" >> "$GITHUB_OUTPUT"
+          # The v2n LAVA job runs alongside v2h's, so it needs its own peer (42).
+          echo "wg-slot-v2n=$((WG_SLOT_BASE + 5))" >> "$GITHUB_OUTPUT"
 
   build:
     uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
