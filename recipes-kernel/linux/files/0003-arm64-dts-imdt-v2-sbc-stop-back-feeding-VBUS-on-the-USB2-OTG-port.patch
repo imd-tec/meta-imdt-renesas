@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ugur-imd <ugur.acikgoz@imd-tec.com>
+Date: Tue, 13 Oct 2026 14:10:09 +0100
+Subject: [PATCH] arm64: dts: imdt-v2-sbc: stop back-feeding VBUS on the USB2
+ OTG port
+
+The 6.1 device tree rework pointed usb2_phy0's vbus-supply at the PHY's
+internal vbus-regulator. The driver enables that regulator at probe and
+can only switch it off again for a GPIO-controlled supply, so VBUS stays
+on even when the board is the USB device. The host on the other end (a
+PC, or the LAVA worker) then sees VBUS back-feed and trips its
+over-current protection. Both the V2H and the V2N do this.
+
+Disable the internal regulator and give the PHY a plain fixed supply
+instead. The PHY then drives VBUS through VBOUT according to the OTG
+role, as it did on dunfell: off as a device, on as a host.
+---
+ arch/arm64/boot/dts/renesas/imdt-v2-sbc.dtsi | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/imdt-v2-sbc.dtsi b/arch/arm64/boot/dts/renesas/imdt-v2-sbc.dtsi
+index 8b0e86b..29336e0 100644
+--- a/arch/arm64/boot/dts/renesas/imdt-v2-sbc.dtsi
++++ b/arch/arm64/boot/dts/renesas/imdt-v2-sbc.dtsi
+@@ -37,6 +37,14 @@
+ 		};
+ 	};
+ 
++	/* VBUS on the OTG port is switched by the PHY itself (VBOUT), per role. */
++	usb20_vbus: regulator-usb20-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb20-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
+ 	reg_1p8v: regulator0 {
+ 		compatible = "regulator-fixed";
+ 
+@@ -797,15 +805,21 @@
+ 	status = "okay";
+ };
+ 
++/*
++ * The PHY's internal vbus-regulator is switched on at probe and the driver
++ * cannot switch it off again, so the board back-feeds VBUS into the host it
++ * is attached to as a device. Use a plain supply instead, so VBUS follows
++ * the OTG role as it did on dunfell.
++ */
+ &usb2_phy0_vbus_otg {
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &usb2_phy0 {
+ 	pinctrl-0 = <&usb20_pins>;
+ 	pinctrl-names = "default";
+ 
+-	vbus-supply = <&usb2_phy0_vbus_otg>;
++	vbus-supply = <&usb20_vbus>;
+ 	status = "okay";
+ };
+ 
+-- 
+2.34.1
+

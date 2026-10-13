@@ -23,8 +23,8 @@ SRC_URI += "file://0001-arm64-imdt-v2h-sbc-enable-Panfrost-GPU-driver-and-DT.pat
 # overlay's panel@0 node on both imdt-v2h-sbc and imdt-v2n-sbc.
 SRC_URI += "file://0002-arch-arm64-enable-drm-panel-simple.patch"
 
-# Stop the V2N back-feeding VBUS into the USB host on its OTG port.
-SRC_URI:append:imdt-v2n-sbc = " file://0003-arm64-dts-imdt-v2n-sbc-stop-back-feeding-VBUS-on-the-USB2-OTG-port.patch"
+# Stop the V2H and V2N back-feeding VBUS into the USB host on their OTG port.
+SRC_URI += "file://0003-arm64-dts-imdt-v2-sbc-stop-back-feeding-VBUS-on-the-USB2-OTG-port.patch"
 
 do_kernel_configme:append() {
     merge_config.sh -O ${B} -m ${B}/.config \

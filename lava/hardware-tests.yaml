@@ -88,9 +88,10 @@ actions:
           steps:
           - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
           - 'c eth-driver-bound "basename $(readlink /sys/class/net/end0/device/driver) | grep -qw renesas-gbeth"'
-          - 'c eth-carrier "test $(cat /sys/class/net/end0/carrier) -eq 1"'
-          - 'c eth-link-1g "test $(cat /sys/class/net/end0/speed) -eq 1000"'
-          - 'c eth-ping-gateway "ping -c2 -W2 $(ip route | awk /^default/{print\$3})"'
+          # Not available on the test rig.
+          # - 'c eth-carrier "test $(cat /sys/class/net/end0/carrier) -eq 1"'
+          # - 'c eth-link-1g "test $(cat /sys/class/net/end0/speed) -eq 1000"'
+          # - 'c eth-ping-gateway "ping -c2 -W2 $(ip route | awk /^default/{print\$3})"'
           - 'c eth-second-port "test -d /sys/class/net/end1"'
           - 'c can-interface "test -d /sys/class/net/can0"'
           - 'c can-clock "ip -d link show can0 | grep -q 80000000"'
@@ -113,12 +114,14 @@ actions:
           - 'c gpio-soc-pinctrl "gpiodetect | grep -q pinctrl"'
           - 'c gpio-expanders "test $(gpiodetect | wc -l) -ge 3"'
           - 'c rtc-device "test -c /dev/rtc0"'
-          - 'c rtc-read "hwclock -r"'
+          # Not available on the test rig.
+          # - 'c rtc-read "hwclock -r"'
           - 'c watchdog-device "test -c /dev/watchdog0"'
           - 'c usb-controllers "test $(ls -d /sys/bus/usb/devices/usb* | wc -l) -ge 6"'
           - 'c usb-gadget-udc "test -n $(ls /sys/class/udc)"'
-          - 'c pcie-bridge "lspci | grep -q bridge"'
-          - 'c pcie-endpoint "test $(lspci | wc -l) -ge 2"'
+          # Not available on the test rig.
+          # - 'c pcie-bridge "lspci | grep -q bridge"'
+          # - 'c pcie-endpoint "test $(lspci | wc -l) -ge 2"'
 
     - from: inline
       name: sensors
@@ -195,7 +198,8 @@ actions:
           - 'c sen-ther-1-zone0 "t=$(cat /sys/class/thermal/thermal_zone0/temp); test \$t -gt 20000 -a \$t -lt 110000"'
           - 'c sen-ther-1-zone1 "t=$(cat /sys/class/thermal/thermal_zone1/temp); test \$t -gt 20000 -a \$t -lt 110000"'
           # PCI-2 - PCIe link from the kernel log
-          - 'c pci-2-link-up "dmesg | grep -q PCIe.x4:.link.up"'
+          # Not available on the test rig.
+          # - 'c pci-2-link-up "dmesg | grep -q PCIe.x4:.link.up"'
           - 'c pci-2-lanes "dmesg | grep -q Configuring.PCIe.with.4.lane"'
           # SWUEMMC-1 - active rootfs partition is reported
           - 'c swuemmc-1-partitions "grep -q root= /proc/cmdline"'
