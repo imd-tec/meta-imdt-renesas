@@ -149,13 +149,19 @@ actions:
         metadata:
           format: Lava-Test Test Definition 1.0
           name: media
-          description: Renesas media drivers and the audio codec
+          description: Renesas media drivers, AR1335/AP1302 cameras and the audio codec
         run:
           steps:
           - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
           - 'c mmngr-module "lsmod | grep -q ^mmngr"'
           - 'c vspm-module "lsmod | grep -q ^vspm"'
           - 'c ap1302-module "lsmod | grep -q ^ap1302"'
+          # AR1335 cameras on CSI0/CSI1: /dev/mediaN and /dev/videoN are CSI port N.
+          - 'c cam0-detected "media-ctl -d /dev/media0 -p | grep -q ap1302"'
+          - 'c cam0-capture "/home/root/v4l2-init.sh --device 0 && timeout 30 gst-launch-1.0 -e v4l2src io-mode=4 device=/dev/video0 num-buffers=1 ! video/x-raw,format=YUY2,width=1920,height=1080 ! videoconvert ! jpegenc ! filesink location=/tmp/cam0.jpg && test \$(stat -c%s /tmp/cam0.jpg) -gt 100000"'
+          - 'c cam1-detected "media-ctl -d /dev/media1 -p | grep -q ap1302"'
+          - 'c cam1-capture "/home/root/v4l2-init.sh --device 1 && timeout 30 gst-launch-1.0 -e v4l2src io-mode=4 device=/dev/video1 num-buffers=1 ! video/x-raw,format=YUY2,width=1920,height=1080 ! videoconvert ! jpegenc ! filesink location=/tmp/cam1.jpg && test \$(stat -c%s /tmp/cam1.jpg) -gt 100000"'
+          - 'rm -f /tmp/cam0.jpg /tmp/cam1.jpg'
           # To be looked into soon.
           # - 'c audio-card "aplay -l | grep -q rsnd_rzv2h"'
           # - 'c audio-codec "aplay -l | grep -q tlv320aic3x"'
