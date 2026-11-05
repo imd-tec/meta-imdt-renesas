@@ -367,8 +367,11 @@ Then program the bootloader to the eMMC as described in [Flashing the bootloader
 > device tree overlays, software updates and DRP-AI/codecs. Flash the
 > bootloader from the same build as the image.
 
-The bootloader is programmed over the debug serial console with the Renesas
-Flash Writer. The files are in the deploy directory:
+The bootloader is programmed over the debug serial console. On the V2H SBC use
+the [fastboot loader](#flashing-with-the-fastboot-loader-v2h-sbc), which needs
+no Flash Writer and takes about 20 seconds to start. The V2N SBC, and any V2H
+board without the loader image, uses the Renesas Flash Writer. The files are in
+the deploy directory:
 
 | File | V2H SBC | V2N SBC |
 |---|---|---|
@@ -376,6 +379,70 @@ Flash Writer. The files are in the deploy directory:
 | BL2 (xSPI) | `bl2_bp_spi-imdt-v2h-sbc.srec` | `bl2_bp_spi-imdt-v2n-sbc.srec` |
 | BL2 (eMMC) | `bl2_bp_mmc-imdt-v2h-sbc.srec` | `bl2_bp_mmc-imdt-v2n-sbc.srec` |
 | FIP (BL31 + U-Boot) | `fip-imdt-v2h-sbc.srec` | `fip-imdt-v2n-sbc.srec` |
+
+#### Flashing with the fastboot loader (V2H SBC)
+
+The fastboot loader replaces the Flash Writer. A small SPL is sent over the
+debug serial console, brings up DRAM and runs a fastboot-only U-Boot. Nothing is
+written to flash to start it, so it also works on a board with a blank or
+damaged bootloader. The bootloader is then written over USB with fastboot.
+
+You need a Linux host with `python3`, `python3-serial` and `fastboot`
+(`android-tools-fastboot`), the debug serial port and a USB cable from the host
+to the **USB OTG** port of the SBC.
+
+> [!NOTE]
+> The loader image is built from the IMDT U-Boot tree (`imdt-v2024.07` branch)
+> with `tools/imdt/v2h-build-loader.sh v2h-fastboot.img`. It is not in the
+> deploy directory yet.
+
+1. Put the board in [SCIF download mode](#boot-sbc-into-scif-download-mode) and
+   close any terminal program, since the script uses the serial port itself.
+
+2. Load the fastboot loader:
+
+   ```bash
+   scripts/v2h-scif-boot.py /dev/ttyUSB0 v2h-fastboot.img
+   ```
+
+   When the board is ready the script prints the fastboot device:
+
+   ```
+   [fastboot loader started in 17.9s]
+   fastboot: imdt-v2h-sbc	 Android Fastboot
+   ```
+
+3. Write the bootloader from the deploy directory. To flash xSPI:
+
+   ```bash
+   scripts/v2h-flash.py qspi \
+       --bl2 bl2_bp_spi-imdt-v2h-sbc.srec --fip fip-imdt-v2h-sbc.srec
+   ```
+
+   To flash the eMMC boot partition and set the eMMC to boot from it:
+
+   ```bash
+   scripts/v2h-flash.py emmc-boot --boot-config \
+       --bl2 bl2_bp_mmc-imdt-v2h-sbc.srec --fip fip-imdt-v2h-sbc.srec
+   ```
+
+   The script reads each image back and compares it, and stops with an error
+   if it differs. It accepts the `.srec` files or raw `.bin` files.
+
+4. Power off the board, set the DIP switches to **xSPI boot** (OFF, ON, ON) or
+   **eMMC boot** (OFF, OFF, OFF) and power it on.
+
+The fastboot U-Boot runs without the secure firmware, so it is only for
+flashing and cannot boot Linux. Power cycle the board to leave it. Other U-Boot
+commands can be run with `fastboot oem run:"<command>"`, with the output on the
+serial console. The console is at 921600 baud once the loader has started.
+
+If the loader hangs, the script stops with `timed out waiting for ...` and the
+serial output shows how far it got.
+
+#### Flashing with the Flash Writer
+
+Use this on the V2N SBC, or if the fastboot loader is not available.
 
 #### Loading the Flash Writer
 
