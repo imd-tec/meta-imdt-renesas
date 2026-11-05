@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the RZ/V2H bootloader through the fastboot loader (replaces Flash Writer).
+"""Write the RZ/V2H or RZ/V2N bootloader through the fastboot loader (replaces Flash Writer).
 
 usage: v2h-flash.py qspi     --bl2 FILE --fip FILE
        v2h-flash.py emmc-boot --bl2 FILE --fip FILE [--boot-config]

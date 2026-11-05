@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Boot an RZ/V2H SBC into fastboot over the debug serial port.
+"""Boot an RZ/V2H or RZ/V2N SBC into fastboot over the debug serial port.
 
 Replaces the Renesas Flash Writer: nothing is written to flash. The board must
 be in SCIF download mode (see the README). The image comes from
@@ -54,7 +54,7 @@ def main():
     img = open(args.image, "rb").read()
     magic, srec_len, fw_len, s2_len, s2_addr = struct.unpack_from("<4sIIII", img)
     if magic != b"V2HF":
-        sys.exit("%s is not a V2H loader image" % args.image)
+        sys.exit("%s is not a V2H or V2N loader image" % args.image)
     off = 20
     srec = img[off:off + srec_len]
     phyfw = img[off + srec_len:off + srec_len + fw_len]

@@ -368,10 +368,10 @@ Then program the bootloader to the eMMC as described in [Flashing the bootloader
 > bootloader from the same build as the image.
 
 The bootloader is programmed over the debug serial console. On the V2H SBC use
-the [fastboot loader](#flashing-with-the-fastboot-loader-v2h-sbc), which needs
-no Flash Writer and takes about 20 seconds to start. The V2N SBC, and any V2H
-board without the loader image, uses the Renesas Flash Writer. The files are in
-the deploy directory:
+the [fastboot loader](#flashing-with-the-fastboot-loader), which needs
+no Flash Writer and takes about 20 seconds to start. It works the same way on
+the V2H and V2N SBC. Any board without the loader image uses the Renesas Flash
+Writer. The files are in the deploy directory:
 
 | File | V2H SBC | V2N SBC |
 |---|---|---|
@@ -380,7 +380,7 @@ the deploy directory:
 | BL2 (eMMC) | `bl2_bp_mmc-imdt-v2h-sbc.srec` | `bl2_bp_mmc-imdt-v2n-sbc.srec` |
 | FIP (BL31 + U-Boot) | `fip-imdt-v2h-sbc.srec` | `fip-imdt-v2n-sbc.srec` |
 
-#### Flashing with the fastboot loader (V2H SBC)
+#### Flashing with the fastboot loader
 
 The fastboot loader replaces the Flash Writer. A small SPL is sent over the
 debug serial console, brings up DRAM and runs a fastboot-only U-Boot. Nothing is
@@ -393,8 +393,10 @@ to the **USB OTG** port of the SBC.
 
 > [!NOTE]
 > The loader image is built from the IMDT U-Boot tree (`imdt-v2024.07` branch)
-> with `tools/imdt/v2h-build-loader.sh v2h-fastboot.img`. It is not in the
-> deploy directory yet.
+> with `tools/imdt/v2h-build-loader.sh v2h-fastboot.img` for the V2H SBC or
+> `tools/imdt/v2n-build-loader.sh v2n-fastboot.img` for the V2N SBC. It is not
+> in the deploy directory yet. The examples below use the V2H file names and
+> the same commands work on the V2N with `v2n` in place of `v2h`.
 
 1. Put the board in [SCIF download mode](#boot-sbc-into-scif-download-mode) and
    close any terminal program, since the script uses the serial port itself.
@@ -442,7 +444,7 @@ serial output shows how far it got.
 
 #### Flashing with the Flash Writer
 
-Use this on the V2N SBC, or if the fastboot loader is not available.
+Use this if the fastboot loader is not available.
 
 #### Loading the Flash Writer
 
