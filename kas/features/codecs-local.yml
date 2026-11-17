@@ -1,0 +1,9 @@
+header:
+  version: 15
+
+# Append after codecs.yml to build with a local copy of meta-rz-codecs in
+# sources/meta-rz-features/meta-rz-codecs instead of fetching it from the
+# private repo. See "Adding the proprietary Renesas codecs" in the README.
+repos:
+  meta-rz-features-codecs:
+    url: null

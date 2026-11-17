@@ -39,7 +39,8 @@ The images are built on top of the Renesas `rz-vlp` distribution from [meta-rene
 >
 > Both SBCs use the same carrier board. The V2N SoC has fewer USB, CSI and PCIe
 > lanes than the V2H, so some connectors are only functional on the V2H — see
-> [USB](#usb).
+> [USB](#usb). A ❌ in the table below means the hardware is not available on
+> that board, not that it is unsupported by the software.
 
 | Feature | Hardware | Interface | Kernel Driver | V2H SBC (16GB) Status | V2N SBC (8GB) Status |
 |---|---|---|---|---|---|
@@ -71,7 +72,8 @@ The images are built on top of the Renesas `rz-vlp` distribution from [meta-rene
 | USB 2.0 Type-A | — | USB2 | ehci/ohci | ✅ Host | ❌ |
 | USB 3.0 Type-A (J8) | — | USB3 | xhci | ✅ Host | ❌ |
 | USB Micro-B (OTG) | — | USB2 | renesas_usbhs | ✅ Host or peripheral mode | ✅ Host or peripheral mode |
-| Video Encode (H.264 / H.265) | Renesas codec IP | — | proprietary | ✅ Requires `meta-rz-codecs` | ❌ |
+| Video Decode (H.264 / H.265) | Renesas codec IP | — | proprietary | ✅ Requires `meta-rz-codecs` | ✅ Requires `meta-rz-codecs` |
+| Video Encode (H.264 / H.265) | Renesas codec IP | — | proprietary | ✅ Requires `meta-rz-codecs` | ✅ Requires `meta-rz-codecs` |
 | Wi-Fi 802.11b/g/n | Murata 1XK (NXP IW416) | SDIO | moal / mlan | ✅ | ✅ |
 | xSPI Flash (16 MB) | — | xSPI | — | ✅ | ✅ |
 | Yocto / OpenEmbedded Scarthgap branch | — | — | — | ✅ | ✅ |
@@ -103,7 +105,8 @@ same carrier board. The main differences between the two SoMs are:
 ## Boot Chain
 
 The boot chain used to boot into Linux is shown below.
-![V2H/V2N SBC boot chain](docs/boot-flow.png)
+
+<img src="docs/boot-flow.png" alt="V2H/V2N SBC boot chain" width="500"/>
 
 1. **BootROM** — on-chip ROM that reads the [boot mode DIP switches](#13-boot-mode-switch) and either loads the next stage from xSPI flash or eMMC, or enters SCIF download mode so the bootloader can be programmed over the debug serial console.
 2. **Trusted Firmware-A BL2 / BL31** — loaded from xSPI flash or the eMMC boot partition. Initialises DDR and the rest of the system and starts U-Boot.
@@ -149,7 +152,7 @@ The SD card and eMMC images (`.wic.gz`) share the same layout, generated from
 image — it lives in xSPI flash or in the eMMC boot partition (see
 [Flashing the bootloader](#flashing-the-bootloader)).
 
-![Storage layout](docs/storage-layout.png)
+<img src="docs/storage-layout.png" alt="Storage layout" width="600"/>
 
 | Partition | Size | Contents |
 |---|---|---|
@@ -178,7 +181,7 @@ See [lava/fastboot-deploy.yaml](lava/fastboot-deploy.yaml) and [lava/hardware-te
 
 [5] [RZ/V2H/V2N Linux Interface Specification GStreamer](https://www.renesas.com/en/document/mas/rzv2h-group-linux-interface-specification-gstreamer-users-manual-software)
 
-[6] [Renesas AI SDK 5.00 Documentation](https://renesas-rz.github.io/rzv_ai_sdk/5.00/ai-sdk.html)
+[6] [Renesas AI SDK 6.00 Documentation](https://renesas-rz.github.io/rzv_ai_sdk/6.00/ai-sdk.html)
 
 ## Prerequisites
 
@@ -258,32 +261,42 @@ kas-container build meta-imdt-renesas/kas/imdt-v2h-base.yml:meta-imdt-renesas/ka
 |---|---|---|
 | DRP-AI | `kas/features/v2h-drpai.yml` / `kas/features/v2n-drpai.yml` | V2H / V2N |
 | OpenCVA | `kas/features/v2h-opencva.yml` / `kas/features/v2n-opencva.yml` | V2H / V2N |
-| H.264 / H.265 codecs | `kas/features/codecs.yml` | V2H — requires the [proprietary codecs layer](#adding-the-proprietary-renesas-codecs) |
+| H.264 / H.265 codecs | `kas/features/codecs.yml` | V2H / V2N — requires the [proprietary codecs layer](#adding-the-proprietary-renesas-codecs) |
 | Docker | `kas/features/docker.yml` | V2H / V2N |
 
 Some features target the same hardware resources and cannot be enabled together:
 
 - **V2H:** Codecs and OpenCVA are mutually exclusive.
-- **V2N:** DRP-AI, Codecs and OpenCVA are mutually exclusive.
+- **V2N:** OpenCVA cannot be combined with DRP-AI or Codecs. DRP-AI and Codecs can be enabled together.
 
 ### Adding the proprietary Renesas codecs
 
-The codecs layer (`meta-rz-codecs`) requires acceptance of Renesas's Terms and
-Conditions and must be downloaded separately. If it is enabled without the layer
-in place, the build fails with:
+The codecs layer (`meta-rz-codecs`, from the RZ/V2H AI SDK v6.00) requires
+acceptance of Renesas's Terms and Conditions, so it is not public.
+[`kas/features/codecs.yml`](kas/features/codecs.yml) fetches it from IMDT's
+private `imd-tec/meta-rz-codecs` repository, which needs read access to that
+repository over SSH:
 
-```
-ERROR: The following layer directories do not exist:
-ERROR:    .../sources/meta-rz-features/meta-rz-codecs
+```bash
+kas-container --ssh-dir ~/.ssh build meta-imdt-renesas/kas/imdt-v2h-base.yml:meta-imdt-renesas/kas/features/codecs.yml
 ```
 
-1. Download the **RZ/V2N AI SDK v5.00 Source Code** from the [Renesas website](https://www.renesas.com/en/software-tool/rzv2n-ai-software-development-kit#downloads) (~16GB). The exact version is given in the comments of [`kas/features/codecs.yml`](kas/features/codecs.yml).
-2. Extract the archive, then extract `rzv2n_ai-sdk_yocto_recipe_v5.00.tar.gz` inside it.
-3. Copy the codecs layer into your kas workspace and re-run the build with `kas/features/codecs.yml` appended:
+Without access to that repository, use a copy of the layer from the Renesas SDK
+instead:
+
+1. Download the **RZ/V2H AI SDK v6.00 Source Code** from the [Renesas website](https://www.renesas.com/en/software-tool/rzv2h-ai-software-development-kit#downloads).
+2. Extract the archive, then extract `rzv2h_ai-sdk_yocto_recipe_v6.00.tar.gz` inside it.
+3. Copy the codecs layer into your kas workspace:
 
 ```bash
 mkdir -p sources/meta-rz-features
 cp -r <path-to-extracted-sdk>/meta-rz-features/meta-rz-codecs sources/meta-rz-features/
+```
+
+4. Build with `kas/features/codecs-local.yml` appended after `kas/features/codecs.yml`, so kas uses the local copy instead of fetching it:
+
+```bash
+kas-container build meta-imdt-renesas/kas/imdt-v2h-base.yml:meta-imdt-renesas/kas/features/codecs.yml:meta-imdt-renesas/kas/features/codecs-local.yml
 ```
 
 ### Building an SDK
@@ -566,7 +579,7 @@ See the [GStreamer guide](#references) for more pipelines.
 
 ### Hardware Video Encode
 
-H.264 and HEVC hardware encoding is available on the **V2H** only and requires the [proprietary codecs](#adding-the-proprietary-renesas-codecs). The pipeline is AP1302 (YUYV) → `vspmfilter` (NV12) → `omxh264enc` / `omxh265enc`.
+H.264 and HEVC hardware encoding is available on both the V2H and the V2N and requires the [proprietary codecs](#adding-the-proprietary-renesas-codecs). The pipeline is AP1302 (YUYV) → `vspmfilter` (NV12) → `omxh264enc` / `omxh265enc`.
 
 Encode the camera stream to H.264:
 

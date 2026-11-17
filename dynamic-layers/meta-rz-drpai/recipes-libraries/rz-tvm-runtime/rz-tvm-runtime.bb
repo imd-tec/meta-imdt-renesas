@@ -2,7 +2,7 @@ SUMMARY = "Apache TVM runtime library for the Renesas RZ series"
 DESCRIPTION = "Apache TVM Runtime"
 LICENSE = "CLOSED"
 
-SRC_URI = "git://git@github.com/renesas-rz/rzv_drp-ai_tvm.git;protocol=ssh;branch=main"
+SRC_URI = "git://github.com/renesas-rz/rzv_drp-ai_tvm.git;protocol=https;branch=main"
 SRCREV = "b0dba60857ff4c90fa696f8f078362c3bc27644f" 
 PV = "git${SRCPV}"
 S = "${WORKDIR}/git"
@@ -10,6 +10,10 @@ S = "${WORKDIR}/git"
 COMPATIBLE_MACHINE = "(r9a09g057|r9a09g056)"
 # Define the target library path
 LIBDIR = "${D}${libdir}"
+# The repo ships a prebuilt runtime per SoC
+TVM_SOC:r9a09g057 = "V2H"
+TVM_SOC:r9a09g056 = "V2N"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 # Symbolic links need to be created to replace the original 3rd party folder thats in tvm/3rdparty/
 do_configure() {
@@ -37,7 +41,7 @@ do_install() {
     install -d ${D}${includedir}
     install -d ${LIBDIR}
     #Install the runtime
-    install -m 0644 ${S}/obj/build_runtime/V2H/libtvm_runtime.so  ${LIBDIR}/libtvm_runtime.so.${SRCREV}
+    install -m 0644 ${S}/obj/build_runtime/${TVM_SOC}/libtvm_runtime.so  ${LIBDIR}/libtvm_runtime.so.${SRCREV}
     ln -sf libtvm_runtime.so.${SRCREV} ${LIBDIR}/libtvm_runtime.so
     # Install the header files
     cp -R ${S}/tvm/include/tvm/ ${D}${includedir}/
@@ -48,4 +52,7 @@ do_install() {
 
 RDEPENDS:${PN} = "mmngr-user-module mmngrbuf-user-module"
 
+# The library has no SONAME, so programs need libtvm_runtime.so itself at run time
+FILES_SOLIBSDEV = ""
+INSANE_SKIP:${PN} += "dev-so"
 FILES:${PN} = "${libdir}/libtvm_runtime* ${includedir}/tvm/ ${includedir}/*"
