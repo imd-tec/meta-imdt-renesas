@@ -1,0 +1,90 @@
+# DRP-AI tests over ssh, for an image built with kas/features/v2h-drpai.yml.
+# Run after hardware-tests.yaml against the same deployed image.
+device_type: ssh
+job_name: DRP-AI tests on imdt-v2h-sbc
+tags:
+- v2h-sbc
+
+timeouts:
+  job:
+    minutes: 15
+  action:
+    minutes: 10
+  connection:
+    minutes: 5
+priority: medium
+visibility: public
+
+metadata:
+  machine: imdt-v2h-sbc
+
+actions:
+- deploy:
+    to: ssh
+    os: oe
+    timeout:
+      minutes: 5
+
+- boot:
+    method: ssh
+    prompts:
+    - 'root@'
+    timeout:
+      minutes: 5
+
+- test:
+    timeout:
+      minutes: 10
+    definitions:
+
+    - from: inline
+      name: drpai
+      path: inline/drpai.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: drpai
+          description: DRP-AI driver, memory and userspace stack
+        run:
+          steps:
+          # c NAME CMD - record a test case from CMD's exit status
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c drpai-driver-bound "readlink -f /sys/bus/platform/devices/17000000.drpai/driver | grep -q drpai-rz"'
+          - 'c drpai-dev-node "test -c /dev/drpai0"'
+          - 'c drpai-mem-region "dmesg | grep -q \"DRP-AI memory region start 0x0000000240000000, size 0x0000000020000000\""'
+          # Read-only ioctls: the reserved area, and the driver idle with no error.
+          - |
+            cat > /tmp/drpai-ioctl.py <<'EOF'
+            import fcntl, os, struct, sys
+            def ior(nr, size): return (2 << 30) | (size << 16) | (46 << 8) | nr
+            fd = os.open("/dev/drpai0", os.O_RDWR)
+            addr, size = struct.unpack("<QQ", fcntl.ioctl(fd, ior(11, 16), bytes(16)))
+            st, err = struct.unpack("<Ii", fcntl.ioctl(fd, ior(3, 136), bytes(136))[:8])
+            print("area 0x%x size 0x%x, status %d (1 = IDLE) err %d" % (addr, size, st, err))
+            sys.exit(0 if (sys.argv[1] == "area" and size == 0x20000000) or
+                          (sys.argv[1] == "status" and st == 1 and err == 0) else 1)
+            EOF
+          - 'c drpai-area-ioctl "python3 /tmp/drpai-ioctl.py area"'
+          - 'c drpai-status-idle "python3 /tmp/drpai-ioctl.py status"'
+          - 'c mmngr-libs "test -e /usr/lib/libmmngr.so.1 -a -e /usr/lib/libmmngrbuf.so.1"'
+          - 'c tvm-runtime "test -e /usr/lib/libtvm_runtime.so"'
+          - 'c python-ai-stack "python3 -c \"import numpy, cv2, PIL, pandas\""'
+
+    - from: inline
+      name: drpai-inference
+      path: inline/drpai-inference.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: drpai-inference
+          description: Renesas's fish classification model on DRP-AI (drpai-selftest)
+        run:
+          steps:
+          # 1000 runs; about 3.5 ms each on the V2H, limit 10 ms.
+          - 'drpai-selftest 1000 10 2>/dev/null | tee /tmp/drpai-selftest.log'
+          - 'grep -q "^drpai-selftest: .*: PASS" /tmp/drpai-selftest.log && lava-test-case drpai-inference --result pass || lava-test-case drpai-inference --result fail'
+          - 'awk "/^top1 class 0 prob 0\\.9/ {f=1} END {exit !f}" /tmp/drpai-selftest.log && lava-test-case drpai-classify-correct --result pass || lava-test-case drpai-classify-correct --result fail'
+          - 'awk "/^runs/ && \$NF == 0 {f=1} END {exit !f}" /tmp/drpai-selftest.log && lava-test-case drpai-repeatable --result pass || lava-test-case drpai-repeatable --result fail'
+          - 'ms=$(awk "/^runs/ {print \$4}" /tmp/drpai-selftest.log); lava-test-case drpai-inference-time --result $([ -n "$ms" ] && echo pass || echo fail) --measurement ${ms:-0} --units ms'
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c drpai-no-kernel-errors "! dmesg | grep -i drpai | grep -q -i -E \"error|timeout|fail\""'

@@ -1,0 +1,98 @@
+# Codec tests over ssh, for an image built with kas/features/codecs.yml.
+# Run after hardware-tests.yaml against the same deployed image. HW decode
+# needs u-boot to have loaded boot/Codec_Bin.bin (see fastboot-deploy.yaml).
+device_type: ssh
+job_name: Codec tests on imdt-v2h-sbc
+tags:
+- v2h-sbc
+
+timeouts:
+  job:
+    minutes: 15
+  action:
+    minutes: 10
+  connection:
+    minutes: 5
+priority: medium
+visibility: public
+
+metadata:
+  machine: imdt-v2h-sbc
+
+actions:
+- deploy:
+    to: ssh
+    os: oe
+    timeout:
+      minutes: 5
+
+- boot:
+    method: ssh
+    prompts:
+    - 'root@'
+    timeout:
+      minutes: 5
+
+- test:
+    timeout:
+      minutes: 10
+    definitions:
+
+    - from: inline
+      name: codec
+      path: inline/codec.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: codec
+          description: Video codec drivers, firmware and GStreamer OMX stack
+        run:
+          steps:
+          # c NAME CMD - record a test case from CMD's exit status
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c uvcs-driver "lsmod | grep -q ^uvcs_drv && test -c /dev/uvcs"'
+          - 'c drp1-driver-bound "readlink -f /sys/bus/platform/devices/*.drp1/driver | grep -q drp-rz"'
+          - 'c drp1-dev-node "test -c /dev/drp1"'
+          - 'c codec-firmware-file "test -s /boot/Codec_Bin.bin"'
+          - 'c omx-elements "for e in omxh264enc omxh265enc omxh264dec omxh265dec; do gst-inspect-1.0 \$e >/dev/null || exit 1; done"'
+
+    - from: inline
+      name: codec-1080p
+      path: inline/codec-1080p.yaml
+      repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: codec-1080p
+          description: 1080p H.264/H.265 encode and decode speed
+        run:
+          steps:
+          # 300 raw NV12 frames, encoded then decoded. HW does ~120 fps either
+          # way; a CPU fallback decodes at ~15 fps, so the limit is 60 fps.
+          - |
+            cat > /tmp/codec-run.sh <<'EOF'
+            N=300 MIN=60
+            RAW="rawvideoparse width=1920 height=1080 format=nv12 framerate=30/1"
+            # run NAME PIPELINE - time a pipeline, record pass/fail and fps
+            run() {
+              n=$1; shift
+              s=$(date +%s%N)
+              if gst-launch-1.0 -q $* >/tmp/$n.log 2>&1; then rc=0; else rc=1; fi
+              fps=$(awk -v n=$N -v s=$s -v e=$(date +%s%N) 'BEGIN {printf "%.1f", n * 1e9 / (e - s)}')
+              echo "$n rc=$rc fps=$fps"
+              ok=$(awk -v f=$fps -v m=$MIN -v rc=$rc 'BEGIN {print (rc == 0 && f >= m) ? "pass" : "fail"}')
+              lava-test-case $n --result $ok --measurement $fps --units fps
+            }
+            cut -d" " -f1 /proc/uptime > /tmp/codec-start
+            gst-launch-1.0 -q videotestsrc num-buffers=$N pattern=ball ! video/x-raw,format=NV12,width=1920,height=1080 ! filesink location=/tmp/r.nv12
+            run h264-encode filesrc location=/tmp/r.nv12 blocksize=3110400 ! $RAW ! omxh264enc ! h264parse ! filesink location=/tmp/c.h264
+            run h265-encode filesrc location=/tmp/r.nv12 blocksize=3110400 ! $RAW ! omxh265enc ! h265parse ! filesink location=/tmp/c.h265
+            rm -f /tmp/r.nv12
+            run h264-decode filesrc location=/tmp/c.h264 ! h264parse ! omxh264dec ! fakesink sync=false
+            run h265-decode filesrc location=/tmp/c.h265 ! h265parse ! omxh265dec ! fakesink sync=false
+            rm -f /tmp/c.h264 /tmp/c.h265
+            EOF
+          - 'sh /tmp/codec-run.sh'
+          # Only the kernel log since the codec run started; the boot log stays for other jobs.
+          - 'dmesg | awk -F"[][]" -v t=$(cat /tmp/codec-start) "\$2 + 0 >= t" > /tmp/codec-dmesg.log; grep -i -E "drp|uvcs" /tmp/codec-dmesg.log | tail -20'
+          - 'c() { n="$1"; shift; if sh -c "$*"; then lava-test-case "$n" --result pass; else lava-test-case "$n" --result fail; fi; }'
+          - 'c codec-no-kernel-errors "! grep -i -E \"drp|uvcs\" /tmp/codec-dmesg.log | grep -q -i -E \"error|timeout|fail\""'

@@ -58,9 +58,15 @@ actions:
     timeout:
       minutes: 8
 
+# The rig keeps its old env partition, so load the codec firmware here too;
+# images without codecs have no Codec_Bin.bin and skip it.
 - boot:
     method: u-boot
-    commands: root1
+    commands:
+    - setenv mmcdev 1
+    - setenv mmcpart 3
+    - if test -e mmc 1:3 boot/Codec_Bin.bin; then ext4load mmc 1:3 0xAFD00000 boot/Codec_Bin.bin; fi
+    - run mmcboot
     failure_retry: 2
     auto_login:
       login_prompt: 'imdt-v2n-sbc login:'

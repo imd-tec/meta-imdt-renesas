@@ -15,10 +15,18 @@ on:
         description: lava/ job def for the fastboot deploy
         type: string
         default: lava/fastboot-deploy.yaml
-      hardware-tests-file:
-        description: lava/ job def for the hardware tests
+      test-files:
+        description: Space-separated lava/ job defs run in order against the deployed image
         type: string
         default: lava/hardware-tests.yaml
+      images-subdir:
+        description: Folder under LAVA_IMAGES_DIR the rootfs was staged in ('' for the top level)
+        type: string
+        default: ''
+      label:
+        description: Names this test stage in results, artifacts and notifications (e.g. base, features)
+        type: string
+        default: base
       wg-slot:
         description: WireGuard slot to reach the lab LAN, read as the WG_CONF_<slot> secret. Never share a slot between concurrent jobs.
         type: string
@@ -116,8 +124,9 @@ jobs:
         run: |
           ARTIFACT="${{ inputs.image-name }}-${{ inputs.machine }}.rootfs.ext4"
           ROOTFS="${ARTIFACT%.*}-${{ github.sha }}.${ARTIFACT##*.}"
-          echo "rootfs on worker: $ROOTFS"
-          sed -e "s|url: file://.*|url: file://${{ vars.LAVA_IMAGES_DIR }}/${ROOTFS}|" \
+          DIR="${{ vars.LAVA_IMAGES_DIR }}${{ inputs.images-subdir && format('/{0}', inputs.images-subdir) || '' }}"
+          echo "rootfs on worker: $DIR/$ROOTFS"
+          sed -e "s|url: file://.*|url: file://${DIR}/${ROOTFS}|" \
               -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
               ${{ inputs.fastboot-deploy-file }} > /tmp/lava-fastboot-deploy.yaml
           JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-fastboot-deploy.yaml)
@@ -127,22 +136,26 @@ jobs:
       - name: Wait for fastboot deploy job
         run: bash lava/wait-job.sh "$DEPLOY_JOB_ID"
 
-      # Runs after the deploy, so it exercises the rootfs just written.
-      - name: Submit hardware tests job
+      # Run after the deploy, one at a time, so each exercises the rootfs just written.
+      # TEST_JOBS holds name:id pairs for the reporting steps below.
+      - name: Run test jobs
         run: |
-          sed -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
-              ${{ inputs.hardware-tests-file }} > /tmp/lava-hardware-tests.yaml
-          JOB_ID=$(lavacli --identity lava-ci jobs submit /tmp/lava-hardware-tests.yaml)
-          echo "hardware-tests: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
-          echo "HARDWARE_JOB_ID=$JOB_ID" >> "$GITHUB_ENV"
-
-      - name: Wait for hardware tests job
-        run: bash lava/wait-job.sh "$HARDWARE_JOB_ID"
+          for FILE in ${{ inputs.test-files }}; do
+            NAME=$(basename "$FILE" .yaml)
+            sed -e "s|^job_name: \(.*\)|job_name: \1 [${GITHUB_SHA::7}]|" \
+                "$FILE" > "/tmp/lava-$NAME.yaml"
+            JOB_ID=$(lavacli --identity lava-ci jobs submit "/tmp/lava-$NAME.yaml")
+            echo "$NAME: $JOB_ID — http://${{ vars.LAVA_HOST }}/scheduler/job/$JOB_ID"
+            TEST_JOBS="${TEST_JOBS:-} $NAME:$JOB_ID"
+            echo "TEST_JOBS=$TEST_JOBS" >> "$GITHUB_ENV"
+            echo "TEST_JOB_IDS=$(for J in $TEST_JOBS; do printf '%s ' "${J##*:}"; done)" >> "$GITHUB_ENV"
+            bash lava/wait-job.sh "$JOB_ID"
+          done
 
       - name: Show LAVA job results
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
-          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+          for JOB_ID in $DEPLOY_JOB_ID $TEST_JOB_IDS; do
             [ -z "$JOB_ID" ] && continue
             echo "=== Job $JOB_ID ==="
             lavacli --identity lava-ci jobs show "$JOB_ID" || true
@@ -153,7 +166,7 @@ jobs:
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
           HEADER=0
-          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+          for JOB_ID in $DEPLOY_JOB_ID $TEST_JOB_IDS; do
             [ -z "$JOB_ID" ] && continue
             curl -fsSL -H "Authorization: Token $LAVA_TOKEN" \
               "http://${{ vars.LAVA_HOST }}/results/${JOB_ID}/csv" \
@@ -169,7 +182,7 @@ jobs:
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
           mkdir -p lava-logs
-          for NAME_JOB in "fastboot-deploy:$DEPLOY_JOB_ID" "hardware-tests:$HARDWARE_JOB_ID"; do
+          for NAME_JOB in "fastboot-deploy:$DEPLOY_JOB_ID" $TEST_JOBS; do
             NAME="${NAME_JOB%%:*}"; JOB_ID="${NAME_JOB##*:}"
             [ -z "$JOB_ID" ] && continue
             lavacli --identity lava-ci jobs logs "$JOB_ID" \
@@ -181,7 +194,7 @@ jobs:
         if: always() && env.DEPLOY_JOB_ID != ''
         uses: actions/upload-artifact@v4
         with:
-          name: lava-logs-${{ inputs.image-name }}-${{ github.sha }}
+          name: lava-logs-${{ inputs.machine }}-${{ inputs.label }}-${{ github.sha }}
           path: lava-logs/
           if-no-files-found: ignore
           retention-days: 30
@@ -190,13 +203,13 @@ jobs:
         if: always() && env.DEPLOY_JOB_ID != ''
         run: |
           python3 lava/lava_to_junit.py lava-all-results.csv lava-results.xml \
-            "$DEPLOY_JOB_ID $HARDWARE_JOB_ID"
+            "$DEPLOY_JOB_ID $TEST_JOB_IDS"
 
       - name: Publish test results
         if: always() && env.DEPLOY_JOB_ID != ''
         uses: dorny/test-reporter@v2
         with:
-          name: LAVA Test Results (${{ inputs.image-name }}, ${{ inputs.machine }})
+          name: LAVA Test Results (${{ inputs.image-name }}, ${{ inputs.machine }}, ${{ inputs.label }})
           path: lava-results.xml
           reporter: java-junit
           fail-on-error: true
@@ -207,8 +220,8 @@ jobs:
         if: always() && env.DEPLOY_JOB_ID != '' && inputs.is-pr
         run: |
           python3 lava/pr_comment.py lava-all-results.csv lava-comment.md \
-            "${{ vars.LAVA_HOST }}" "${{ inputs.image-name }}" "${{ inputs.machine }}" \
-            "$DEPLOY_JOB_ID $HARDWARE_JOB_ID"
+            "${{ vars.LAVA_HOST }}" "${{ inputs.image-name }} (${{ inputs.label }})" "${{ inputs.machine }}" \
+            "$DEPLOY_JOB_ID $TEST_JOB_IDS"
 
       - name: Post results to PR
         if: always() && env.DEPLOY_JOB_ID != '' && inputs.is-pr
@@ -233,7 +246,7 @@ jobs:
         if: env.DEPLOY_JOB_ID != ''
         run: |
           FAILED=0
-          for JOB_ID in "$DEPLOY_JOB_ID" "$HARDWARE_JOB_ID"; do
+          for JOB_ID in $DEPLOY_JOB_ID $TEST_JOB_IDS; do
             [ -z "$JOB_ID" ] && { FAILED=1; continue; }
             HEALTH=$(lavacli --identity lava-ci jobs show "$JOB_ID" | grep '^Health' | awk '{print $NF}')
             echo "Job $JOB_ID health: $HEALTH"
@@ -263,5 +276,5 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             {
-              "text": "${{ needs.lava-test.result == 'success' && '✅' || '❌' }} *LAVA fastboot deploy* (${{ inputs.image-name }} on ${{ inputs.machine }}) — ${{ needs.lava-test.result }}\n\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Triggered by:* ${{ github.actor }}\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+              "text": "${{ needs.lava-test.result == 'success' && '✅' || '❌' }} *LAVA fastboot deploy* (${{ inputs.image-name }} ${{ inputs.label }} on ${{ inputs.machine }}) — ${{ needs.lava-test.result }}\n\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Triggered by:* ${{ github.actor }}\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
             }

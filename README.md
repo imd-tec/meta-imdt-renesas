@@ -33,9 +33,8 @@ The images are built on top of the Renesas `rz-vlp` distribution from [meta-rene
 
 ## Feature Support
 > [!NOTE]
-> Both boards are built by CI on every commit, and the V2H SBC is also tested
-> on hardware with LAVA (see [Hardware Testing](#hardware-testing)). LAVA
-> testing of the V2N SBC is planned.
+> Both boards are built by CI on every commit and tested on hardware with LAVA
+> (see [Hardware Testing](#hardware-testing)).
 >
 > Both SBCs use the same carrier board. The V2N SoC has fewer USB, CSI and PCIe
 > lanes than the V2H, so some connectors are only functional on the V2H — see
@@ -162,12 +161,17 @@ image — it lives in xSPI flash or in the eMMC boot partition (see
 
 ## Hardware Testing
 
-Every commit is automatically built for both boards, and the V2H build is tested on a physical IMDT V2H SBC via [LAVA](https://lava.readthedocs.io/). Each run executes these jobs in sequence:
+Every commit is automatically built for both boards and tested on physical IMDT V2H and V2N SBCs via [LAVA](https://lava.readthedocs.io/). For each board, the base image runs these jobs in sequence:
 
 1. **Fastboot deploy** — flashes the freshly built rootfs to the inactive A/B slot through U-Boot fastboot, boots it once and verifies the board came up on the new image
 2. **Hardware tests** — checks the SoC, memory, thermal zones, eMMC, SD card, xSPI flash, Ethernet, CAN, Wi-Fi, I2C, GPIO, RTC, watchdog, USB, PCIe, sensors, audio, GPU and kernel health over SSH
 
-See [lava/fastboot-deploy.yaml](lava/fastboot-deploy.yaml) and [lava/hardware-tests.yaml](lava/hardware-tests.yaml) for the full list of test cases.
+The base image with the DRP-AI and codec [optional features](#optional-features) is then deployed the same way and runs:
+
+3. **DRP-AI tests** — checks the DRP-AI driver, its memory region and the AI libraries, then runs an image classification model on the DRP-AI and checks the result and the inference time
+4. **Codec tests** — checks the codec and DRP drivers and the codec firmware, then encodes and decodes 1080p H.264 and H.265 video and checks the frame rate
+
+See the [lava](lava) directory for the full list of test cases. The V2N jobs are the `-v2n.yaml` files.
 
 ## References
 

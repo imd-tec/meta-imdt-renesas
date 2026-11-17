@@ -1,5 +1,6 @@
 IMAGE_INSTALL:append = " \
 	rz-tvm-runtime \
+	drpai-selftest \
 	kernel-module-mmngr \
 	python3-modules \
 	python3-pip \

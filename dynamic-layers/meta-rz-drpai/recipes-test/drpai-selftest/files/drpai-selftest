@@ -1,0 +1,34 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# drpai-selftest [iterations] [max avg ms]
+# Classify Renesas's sample fish image on DRP-AI. Passes when it is class 0
+# ("Bangus") with > 90% confidence, every run gives the same output, and the
+# average inference time is within the limit.
+D=/usr/share/drpai-selftest
+n=${1:-100}
+max=${2:-10}
+in=$(mktemp /tmp/drpai-selftest.XXXXXX) || exit 1
+trap 'rm -f "$in"' EXIT
+
+# Same preprocessing as Renesas's fish_classification app.
+python3 - "$D/Bangus.jpg" "$in" <<'EOF' || exit 1
+import sys, cv2, numpy as np
+f = cv2.imread(sys.argv[1])
+f = cv2.cvtColor(cv2.resize(f, (224, 224)), cv2.COLOR_BGR2RGB)
+(f.transpose(2, 0, 1).astype(np.float32) / 255.0).tofile(sys.argv[2])
+EOF
+
+out=$(drpai-run "$D/model" "$in" "$n")
+rc=$?
+echo "$out"
+[ $rc = 0 ] || { echo "drpai-selftest: drpai-run failed ($rc): FAIL"; exit 1; }
+
+echo "$out" | awk -v max="$max" '
+/^runs/ { avg = $4; mism = $NF }
+/^top1/ { cls = $3; prob = $5 }
+END {
+	ok = cls == 0 && prob > 0.9 && mism == 0 && avg <= max
+	printf "drpai-selftest: class %s prob %s avg %s ms mismatches %s: %s\n",
+	       cls, prob, avg, mism, ok ? "PASS" : "FAIL"
+	exit !ok
+}'
