@@ -1,5 +1,5 @@
 SRC_URI = "git://github.com/imd-tec/renesas-u-boot-cip.git;protocol=https;branch=imdt-v2024.07"
-SRCREV = "3baf6b619845882933d6305eaaba8cf43da43f6b"
+SRCREV = "23e9844c24eb094bd1fa349a1e4c7fc5bc6563ea"
 inherit uboot-config uboot-extlinux-config uboot-sign deploy cml1 python3native
 
 DEPENDS += "kern-tools-native u-boot-tools-native"
@@ -15,8 +15,6 @@ SRC_URI:append = " \
 
 SRC_URI:append:imdt-v2n-sbc = " \
     file://0001-fix-imdt-v2n-sbc-defconfig-arch-selection.patch \
-    file://0002-fix-imdt-v2n-sbc-board-c-include-for-arch-renesas.patch \
-    file://0003-fix-imdt-v2n-sbc-serial-hssrr-undefined-reference.patch \
     file://0004-fix-imdt-v2n-sbc-enable-fastboot.patch \
 "
 
