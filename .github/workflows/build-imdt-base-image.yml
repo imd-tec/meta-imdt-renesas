@@ -94,6 +94,8 @@ jobs:
   # as its rootfs has the same name as the base build's. Not uploaded as a
   # workflow artifact: it carries Renesas's proprietary codec binaries.
   build-features:
+    # Never on tags: kas-build publishes tag builds as release assets.
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
     with:
       kas-config: 'kas/imdt-v2h-base.yml:kas/features/v2h-drpai.yml:kas/features/codecs.yml'
@@ -125,6 +127,8 @@ jobs:
     secrets: inherit
 
   build-features-v2n:
+    # Never on tags: kas-build publishes tag builds as release assets.
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     uses: imd-tec/kas-gh-ci/.github/workflows/kas-build.yml@master
     with:
       kas-config: 'kas/imdt-v2n-base.yml:kas/features/v2n-drpai.yml:kas/features/codecs.yml'
